@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>大安寺線上報名</title>
+<meta name="description" content="禪機山仙佛寺 台北道場大安寺 易經大學 線上報名">
+<meta name="theme-color" content="#8f2a1c">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%238f2a1c'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='white'%3E易%3C/text%3E%3C/svg%3E">
+<script src="config.js"></script>
+<script src="api.js"></script>
+<style>
+:root{
+  --bg:#f4ebd6; --paper:#fffaf0; --ink:#2b2017; --muted:#6a5843; --line:#dccaa5;
+  --red:#8f2a1c; --red-d:#6f1f14; --red-soft:#f6e1d9; --gold:#a87a22; --gold-soft:#f3e3bd;
+  --ok:#2e6a3a; --ok-soft:#e1efdf; --err:#b3261e; --err-soft:#fbe4e1;
+  --fs:20px; --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1d1813; --paper:#28211a; --ink:#f3eadb; --muted:#c3b39a; --line:#4a3d2e;
+    --red:#c9503c; --red-d:#e0664f; --red-soft:#3d241d; --gold:#d6a94d; --gold-soft:#3a2f1c;
+    --ok:#7cc289; --ok-soft:#1f3322; --err:#ff8a7e; --err-soft:#3d1f1c;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1d1813; --paper:#28211a; --ink:#f3eadb; --muted:#c3b39a; --line:#4a3d2e;
+  --red:#c9503c; --red-d:#e0664f; --red-soft:#3d241d; --gold:#d6a94d; --gold-soft:#3a2f1c;
+  --ok:#7cc289; --ok-soft:#1f3322; --err:#ff8a7e; --err-soft:#3d1f1c;
+}
+:root.big{ --fs:24px; }
+*{box-sizing:border-box}
+html{font-size:var(--fs); -webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;line-height:1.6;min-height:100vh}
+.serif{font-family:"Noto Serif TC","Noto Sans TC",serif}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px}
+
+/* 頁首 */
+.top{background:var(--red);color:#fff;padding:12px 0;position:sticky;top:0;z-index:20;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.top .wrap{display:flex;align-items:center;gap:12px}
+.seal{width:46px;height:46px;flex:none;border-radius:50%;background:#fff;display:grid;place-items:center}
+.org{flex:1;line-height:1.3}
+.org b{display:block;font-size:1.15rem;letter-spacing:.08em}
+.org span{display:block;font-size:.72rem;opacity:.9}
+#schoolName{display:none}
+.sizebtn{flex:none;background:rgba(255,255,255,.16);border:2px solid rgba(255,255,255,.6);color:#fff;border-radius:10px;padding:6px 10px;font-size:.8rem;font-weight:700;cursor:pointer;min-height:44px}
+
+main{padding:20px 0 140px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+h1{font-size:1.55rem;margin:0 0 4px;line-height:1.35}
+h2{font-size:1.25rem;margin:0 0 14px;line-height:1.35}
+.sub{color:var(--muted);font-size:.9rem;margin:0}
+
+/* 課程資訊 */
+.hero{text-align:center;padding:26px 18px 22px;background:linear-gradient(180deg,var(--paper),var(--gold-soft));}
+.hero .school{color:var(--gold);font-weight:700;letter-spacing:.3em;font-size:.85rem}
+.hero h1{font-size:1.7rem;color:var(--red);margin:8px 0 6px}
+.facts{margin:0;padding:0;list-style:none}
+.facts li{display:grid;grid-template-columns:5.2em 1fr;gap:10px;padding:12px 0;border-bottom:1px dashed var(--line)}
+.facts li:last-child{border-bottom:0}
+.facts .k{color:var(--muted);font-size:.9rem;padding-top:2px}
+.facts .v{font-weight:500}
+.tag{display:inline-block;padding:2px 12px;border-radius:99px;font-size:.8rem;font-weight:700}
+.tag.open{background:var(--ok-soft);color:var(--ok)}
+.tag.closed{background:var(--err-soft);color:var(--err)}
+
+/* 按鈕 */
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:64px;padding:12px 18px;border-radius:var(--radius);border:2px solid transparent;font-size:1.1rem;font-weight:700;cursor:pointer;text-decoration:none;transition:transform .05s}
+.btn:active{transform:scale(.98)}
+.btn-main{background:var(--red);color:#fff;box-shadow:0 4px 0 var(--red-d)}
+.btn-main:disabled{opacity:.55}
+.btn-line{background:var(--paper);color:var(--ink);border-color:var(--line)}
+.btn-ghost{background:transparent;color:var(--red);border-color:var(--red)}
+.btn + .btn{margin-top:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row2 .btn + .btn{margin-top:0}
+
+/* 進度 */
+.progress{display:flex;gap:6px;margin:4px 0 8px}
+.progress i{flex:1;height:8px;border-radius:4px;background:var(--line)}
+.progress i.on{background:var(--red)}
+.stepinfo{color:var(--muted);font-size:.9rem;font-weight:500}
+
+/* 表單 */
+.field{margin-bottom:22px}
+.field > label,.lbl{display:block;font-weight:700;margin-bottom:8px;font-size:1.05rem}
+.req{color:var(--err);font-size:.8rem;font-weight:700;margin-left:6px;vertical-align:2px;background:var(--err-soft);padding:1px 8px;border-radius:6px}
+.opt{color:var(--muted);font-size:.8rem;font-weight:400;margin-left:6px}
+.hint{color:var(--muted);font-size:.85rem;margin:6px 0 0}
+input[type=text],input[type=tel],input[type=number],select,textarea{width:100%;min-height:58px;padding:10px 14px;border:2px solid var(--line);border-radius:12px;background:var(--paper);font-size:1.1rem}
+textarea{min-height:96px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 4px var(--gold-soft)}
+.bad input,.bad .choice{border-color:var(--err)!important}
+.errmsg{display:none;color:var(--err);font-weight:700;font-size:.9rem;margin-top:6px}
+.bad .errmsg{display:block}
+.warnmsg{color:var(--gold);font-weight:700;font-size:.9rem;margin-top:6px}
+.date3{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.date3 input{width:2.7em;text-align:center;padding:10px 2px}
+.date3 input.y{width:3.3em}
+@media (max-width:420px){ .card{padding:18px 14px} }
+.date3 span{font-weight:500}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.choice{min-height:64px;border:2px solid var(--line);border-radius:12px;background:var(--paper);font-size:1.2rem;font-weight:700;cursor:pointer}
+.choice.on{background:var(--red);border-color:var(--red);color:#fff}
+.check{display:flex;align-items:center;gap:12px;padding:14px;border:2px solid var(--line);border-radius:12px;cursor:pointer;background:var(--paper);font-weight:500}
+.check input{width:30px;height:30px;flex:none;accent-color:var(--red)}
+.check.on{border-color:var(--ok);background:var(--ok-soft)}
+.zipaddr{display:grid;grid-template-columns:5.5em 1fr;gap:8px}
+.skipnote{background:var(--gold-soft);border-radius:12px;padding:12px 14px;font-size:.95rem;margin-bottom:20px}
+.fam{border:2px dashed var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.fam h3{margin:0 0 12px;font-size:1.05rem;display:flex;justify-content:space-between;align-items:center}
+.fam .rm{background:none;border:0;color:var(--err);font-size:.9rem;font-weight:700;cursor:pointer;padding:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.chip{border:2px solid var(--line);background:var(--paper);border-radius:99px;padding:6px 16px;font-size:1rem;cursor:pointer;min-height:44px}
+.chip.on{background:var(--gold);border-color:var(--gold);color:#fff}
+.photo{display:flex;gap:14px;align-items:center}
+.photo img{width:96px;height:120px;object-fit:cover;border-radius:8px;border:2px solid var(--line)}
+
+/* 底部按鈕列 */
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);padding:12px 0 calc(12px + env(safe-area-inset-bottom));z-index:15;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+.bar .wrap{display:grid;grid-template-columns:1fr 2fr;gap:12px}
+.bar .btn{min-height:60px}
+
+/* 確認頁 */
+.review dl{margin:0}
+.review .sec{border-bottom:1px solid var(--line);padding:14px 0}
+.review .sec:last-child{border-bottom:0}
+.review .sec h3{margin:0 0 8px;font-size:1.05rem;display:flex;justify-content:space-between;align-items:center;color:var(--red)}
+.review .edit{border:2px solid var(--red);color:var(--red);background:none;border-radius:10px;padding:4px 14px;font-weight:700;font-size:.9rem;cursor:pointer;min-height:40px}
+.review dt{color:var(--muted);font-size:.85rem;margin-top:6px}
+.review dd{margin:0;font-weight:500;font-size:1.05rem;word-break:break-all}
+.review dd.empty{color:var(--muted);font-weight:400}
+
+/* 完成頁 */
+.done{text-align:center}
+.done .ok{width:96px;height:96px;margin:6px auto 12px;border-radius:50%;background:var(--ok);display:grid;place-items:center}
+.done .no{font-family:"Noto Serif TC",serif;font-size:2rem;font-weight:900;color:var(--red);letter-spacing:.05em;background:var(--red-soft);border-radius:12px;padding:6px 10px;margin:10px 0}
+.remind{text-align:left;background:var(--gold-soft);border-radius:12px;padding:14px 16px;margin:16px 0}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;z-index:50}
+.overlay .box{background:var(--paper);border-radius:16px;padding:28px 30px;text-align:center;max-width:90vw;font-size:1.15rem;font-weight:700}
+.spin{width:52px;height:52px;border:6px solid var(--line);border-top-color:var(--red);border-radius:50%;margin:0 auto 14px;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.alert{border-radius:12px;padding:14px 16px;margin-bottom:16px;font-weight:500}
+.alert.err{background:var(--err-soft);color:var(--err)}
+.alert.info{background:var(--gold-soft)}
+.demo{background:#3b2f22;color:#f4e3bd;font-size:.75rem;text-align:center;padding:4px}
+.foot{text-align:center;color:var(--muted);font-size:.8rem;padding:10px 0 30px}
+.classpick{display:block;text-align:left;width:100%;background:var(--paper);border:2px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:12px;cursor:pointer}
+.classpick b{display:block;font-size:1.2rem;color:var(--red)}
+</style>
+</head>
+<body>
+<div id="demoBanner" class="demo" hidden>展示模式：資料只存在這台裝置，尚未連接 Google 試算表</div>
+<header class="top">
+  <div class="wrap">
+    <div class="seal" aria-hidden="true">
+      <svg width="36" height="36" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#fff" stroke="#8f2a1c" stroke-width="4"/><path d="M50 2a48 48 0 0 1 0 96a24 24 0 0 1 0-48a24 24 0 0 0 0-48z" fill="#8f2a1c"/><circle cx="50" cy="26" r="7" fill="#8f2a1c"/><circle cx="50" cy="74" r="7" fill="#fff"/></svg>
+    </div>
+    <div class="org"><span id="orgTop">禪機山仙佛寺</span><b class="serif" id="orgName">台北道場大安寺</b><span id="schoolName">易經大學 線上報名</span></div>
+    <button class="sizebtn" id="sizeBtn" type="button" aria-label="調整字的大小">字放大</button>
+  </div>
+</header>
+<main><div class="wrap" id="app"><div class="card" style="text-align:center"><div class="spin"></div>資料載入中…</div></div></main>
+<div id="barSlot"></div>
+<div id="overlaySlot"></div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS = {
+  get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+/* 字體大小 */
+const root = document.documentElement;
+if (LS.get('daansi_big')) root.classList.add('big');
+const syncSize = () => $('#sizeBtn').textContent = root.classList.contains('big') ? '字變小' : '字放大';
+syncSize();
+$('#sizeBtn').onclick = () => { root.classList.toggle('big'); LS.set('daansi_big', root.classList.contains('big')); syncSize(); };
+if (API.isDemo) $('#demoBanner').hidden = false;
+
+const HOURS = ['不知道','子時（晚上11點～半夜1點）','丑時（半夜1點～3點）','寅時（凌晨3點～5點）','卯時（早上5點～7點）','辰時（早上7點～9點）','巳時（上午9點～11點）','午時（中午11點～下午1點）','未時（下午1點～3點）','申時（下午3點～5點）','酉時（傍晚5點～7點）','戌時（晚上7點～9點）','亥時（晚上9點～11點）'];
+const RELS = ['配偶','父親','母親','兒子','女兒','兄弟','姊妹','其他'];
+const STEPS = ['您的基本資料','生日與身分證','住址','工作與其他','家屬與相片'];
+
+const blank = () => ({name:'',gender:'',mobile:'',homeTel:'',bsY:'',bsM:'',bsD:'',blY:'',blM:'',blD:'',blLeap:false,birthHour:'',idNo:'',
+  mailZip:'',mailAddr:'',sameAddr:true,regZip:'',regAddr:'',job:'',org:'',orgTel:'',experience:'',language:'',faith:'',
+  family:[{rel:'',name:'',tel:'',addr:'',sameAddr:false}],referrer:'',userNote:'',agree:false});
+
+const S = { settings:{}, classes:[], cls:null, screen:'loading', step:0, d:blank(), photo:null, result:null, err:'' };
+const draftKey = () => 'daansi_draft_' + (S.cls ? S.cls.code : '');
+
+function saveDraft(){
+  if (!S.cls) return;
+  const copy = Object.assign({}, S.d); delete copy.idNo;    // 身分證不存在手機裡
+  LS.set(draftKey(), { d: copy, step: S.step, t: Date.now() });
+}
+
+/* ========== 載入 ========== */
+async function init(){
+  const code = new URLSearchParams(location.search).get('c') || '';
+  try{
+    const r = await API.call('init', { classCode: code });
+    if (!r.ok) throw new Error(r.msg);
+    S.settings = r.settings || {}; S.classes = r.classes || [];
+    const on = (S.settings.orgName || '禪機山仙佛寺 台北道場大安寺').split(/\s+/);
+    $('#orgName').textContent = on.pop(); $('#orgTop').textContent = (on.join(' ') ? on.join(' ') + '・' : '') + (S.settings.schoolName || '易經大學') + '報名';
+    if (r.cls) { S.cls = r.cls; S.screen = 'info'; }
+    else if (S.classes.length === 1) { S.cls = S.classes[0]; S.screen = 'info'; }
+    else S.screen = 'pick';
+  }catch(e){ S.screen = 'error'; S.err = e.message; }
+  render();
+}
+
+/* ========== 畫面 ========== */
+function render(){
+  const app = $('#app'); let bar = '';
+  if (S.screen === 'pick') app.innerHTML = viewPick();
+  else if (S.screen === 'info') { app.innerHTML = viewInfo(); }
+  else if (S.screen === 'form') { app.innerHTML = viewForm(); bar = barNav(); }
+  else if (S.screen === 'confirm') { app.innerHTML = viewConfirm(); bar = barConfirm(); }
+  else if (S.screen === 'done') app.innerHTML = viewDone();
+  else if (S.screen === 'error') app.innerHTML = viewError();
+  $('#barSlot').innerHTML = bar ? `<div class="bar"><div class="wrap">${bar}</div></div>` : '';
+  bind();
+  window.scrollTo(0,0);
+}
+
+function contactBtns(){
+  const s = S.settings, tel = (s.contactPhone||'').replace(/[^\d]/g,''), mob = (s.contactMobile||'').replace(/[^\d]/g,'');
+  let h = '<div class="row2">';
+  if (tel) h += `<a class="btn btn-line" href="tel:${tel}">📞 打電話問</a>`;
+  if (mob) h += `<a class="btn btn-line" href="tel:${mob}">📱 打手機問</a>`;
+  h += '</div>';
+  if (s.lineUrl) h += `<a class="btn btn-line" style="margin-top:12px" href="${esc(s.lineUrl)}" target="_blank" rel="noopener">💬 用 LINE 詢問大安寺</a>`;
+  return h;
+}
+
+function viewPick(){
+  if (!S.classes.length) return `<div class="card"><h2>目前沒有開放報名的班別</h2><p>有任何問題，歡迎來電詢問。</p>${contactBtns()}</div>`;
+  return `<div class="card"><h2>請選擇要報名的班別</h2>${S.classes.map(c=>`<button class="classpick" data-pick="${esc(c.code)}"><b>${esc(c.name)}</b><span class="sub">開班日期：${esc(c.start)}</span></button>`).join('')}</div>`;
+}
+
+function viewInfo(){
+  const c = S.cls, open = c.status === '開放報名' && !c.full;
+  const draft = LS.get(draftKey());
+  const row = (k,v) => v ? `<li><span class="k">${k}</span><span class="v">${esc(v)}</span></li>` : '';
+  return `
+  <div class="card hero">
+    <div class="school">${esc(S.settings.schoolName||'易經大學')}</div>
+    <h1 class="serif">${esc(c.name)}</h1>
+    <span class="tag ${open?'open':'closed'}">${open?'● 開放報名中':(c.full?'名額已滿':'目前未開放報名')}</span>
+  </div>
+  <div class="card">
+    <ul class="facts">
+      ${row('開班說明',c.intro)}${row('開班日期',c.start)}${row('上課期間',c.period)}${row('上課地點',c.place)}${row('地址',c.address)}${row('報名專線',c.phone)}
+    </ul>
+  </div>
+  ${open ? `
+    ${draft ? `<div class="alert info">您上次還沒填完，要接著填嗎？</div>
+      <button class="btn btn-main" data-go="resume">繼續上次的報名 ➜</button>
+      <button class="btn btn-line" data-go="start">重新開始填寫</button>`
+    : `<button class="btn btn-main" data-go="start" style="font-size:1.3rem;min-height:76px">我要報名 ➜</button>
+       <p class="hint" style="text-align:center;margin:10px 0 18px">大約 3 分鐘，只有姓名、性別、電話一定要填</p>`}
+  ` : `<div class="alert err">這一班目前沒有開放線上報名，請直接來電詢問。</div>`}
+  <div style="margin-top:16px">${contactBtns()}</div>
+  ${S.classes.length > 1 ? `<button class="btn btn-ghost" style="margin-top:12px" data-go="pick">看其他班別</button>` : ''}
+  <p class="foot">${esc(S.settings.orgName||'')}</p>`;
+}
+
+function fld(k, label, opt){
+  opt = opt || {};
+  const v = S.d[k] || '';
+  const tag = opt.tag ? `<span class="req">${opt.tag}</span>` : opt.req ? '<span class="req">必填</span>' : '<span class="opt">（可不填）</span>';
+  const type = opt.type || 'text';
+  const im = opt.im ? `inputmode="${opt.im}"` : '';
+  const input = opt.area
+    ? `<textarea id="f_${k}" data-k="${k}" placeholder="${esc(opt.ph||'')}">${esc(v)}</textarea>`
+    : `<input id="f_${k}" type="${type}" ${im} data-k="${k}" value="${esc(v)}" placeholder="${esc(opt.ph||'')}" autocomplete="${opt.ac||'off'}" ${opt.max?`maxlength="${opt.max}"`:''}>`;
+  return `<div class="field" id="w_${k}"><label for="f_${k}">${label}${tag}</label>${input}
+    ${opt.hint?`<p class="hint">${opt.hint}</p>`:''}<div class="errmsg" id="e_${k}"></div><div id="x_${k}"></div></div>`;
+}
+
+function viewForm(){
+  const n = S.step, d = S.d;
+  let body = '';
+  if (n === 0) body = `
+    ${fld('name','姓名',{req:1,ph:'例：王大明',ac:'name'})}
+    <div class="field" id="w_gender"><span class="lbl">性別<span class="req">必填</span></span>
+      <div class="choices">${['男','女'].map(g=>`<button type="button" class="choice ${d.gender===g?'on':''}" data-gender="${g}">${g}</button>`).join('')}</div>
+      <div class="errmsg">請點選「男」或「女」</div></div>
+    ${fld('mobile','手機號碼',{type:'tel',im:'numeric',ph:'例：0912345678',ac:'tel',tag:'電話擇一必填',hint:'沒有手機的話，填下面的住家電話就可以'})}
+    ${fld('homeTel','住家電話',{type:'tel',im:'tel',ph:'例：02-26837265',tag:'電話擇一必填'})}`;
+  else if (n === 1) body = `
+    <div class="skipnote">這一頁可以不填，不確定的話直接按「下一步」，上課時再補就好。</div>
+    <div class="field"><span class="lbl">出生日（國曆）<span class="opt">（可不填）</span></span>
+      <div class="date3">民國<input class="y" type="text" inputmode="numeric" maxlength="3" data-k="bsY" value="${esc(d.bsY)}" aria-label="國曆出生 民國年">年
+      <input type="text" inputmode="numeric" maxlength="2" data-k="bsM" value="${esc(d.bsM)}" aria-label="月">月
+      <input type="text" inputmode="numeric" maxlength="2" data-k="bsD" value="${esc(d.bsD)}" aria-label="日">日</div>
+      <p class="hint">例：民國 50 年 3 月 15 日</p></div>
+    <div class="field"><span class="lbl">出生日（農曆）<span class="opt">（可不填）</span></span>
+      <div class="date3">民國<input class="y" type="text" inputmode="numeric" maxlength="3" data-k="blY" value="${esc(d.blY)}" aria-label="農曆出生 民國年">年
+      <input type="text" inputmode="numeric" maxlength="2" data-k="blM" value="${esc(d.blM)}" aria-label="月">月
+      <input type="text" inputmode="numeric" maxlength="2" data-k="blD" value="${esc(d.blD)}" aria-label="日">日</div>
+      <label class="check ${d.blLeap?'on':''}" style="margin-top:10px"><input type="checkbox" data-k="blLeap" ${d.blLeap?'checked':''}>是閏月</label></div>
+    <div class="field"><label for="f_birthHour">出生時辰<span class="opt">（可不填）</span></label>
+      <select id="f_birthHour" data-k="birthHour"><option value="">請選擇</option>${HOURS.map(h=>`<option ${d.birthHour===h?'selected':''}>${h}</option>`).join('')}</select></div>
+    ${fld('idNo','身分證字號',{ph:'例：A123456789',max:10,hint:'英文字母會自動變大寫'})}`;
+  else if (n === 2) body = `
+    <div class="skipnote">這一頁可以不填，直接按「下一步」也沒關係。</div>
+    <div class="field"><span class="lbl">通訊住址<span class="opt">（可不填）</span></span>
+      <div class="zipaddr"><input type="text" inputmode="numeric" maxlength="6" data-k="mailZip" value="${esc(d.mailZip)}" placeholder="郵遞區號" aria-label="通訊住址郵遞區號">
+      <input type="text" data-k="mailAddr" value="${esc(d.mailAddr)}" placeholder="例：新北市樹林區…" aria-label="通訊住址" autocomplete="street-address"></div>
+      <p class="hint">郵遞區號不知道可以空白</p></div>
+    <div class="field"><span class="lbl">戶籍住址</span>
+      <label class="check ${d.sameAddr?'on':''}"><input type="checkbox" data-k="sameAddr" ${d.sameAddr?'checked':''}>戶籍住址和上面一樣</label>
+      ${d.sameAddr?'':`<div class="zipaddr" style="margin-top:12px"><input type="text" inputmode="numeric" maxlength="6" data-k="regZip" value="${esc(d.regZip)}" placeholder="郵遞區號" aria-label="戶籍郵遞區號">
+      <input type="text" data-k="regAddr" value="${esc(d.regAddr)}" placeholder="戶籍住址" aria-label="戶籍住址"></div>`}
+    </div>`;
+  else if (n === 3) body = `
+    <div class="skipnote">這一頁可以不填，直接按「下一步」也沒關係。</div>
+    ${fld('job','職業',{ph:'例：退休、家管、自營商'})}
+    ${fld('org','服務機關',{ph:'公司或單位名稱'})}
+    ${fld('orgTel','公司電話',{type:'tel',im:'tel'})}
+    ${fld('experience','經歷',{area:1,ph:'簡單寫就好'})}
+    ${fld('language','會說的語言',{ph:'例：國語、台語'})}
+    ${fld('faith','信仰',{ph:'例：佛教、道教、一貫道、無'})}`;
+  else if (n === 4) body = `
+    <div class="field"><span class="lbl">家屬資料<span class="opt">（可不填，緊急時聯絡用）</span></span>
+      ${d.family.map((f,i)=>`
+        <div class="fam">
+          <h3>家屬 ${i+1} ${d.family.length>1?`<button type="button" class="rm" data-rmfam="${i}">✕ 刪除這位</button>`:''}</h3>
+          <div class="chips">${RELS.map(r=>`<button type="button" class="chip ${f.rel===r?'on':''}" data-rel="${i}|${r}">${r}</button>`).join('')}</div>
+          <input type="text" data-fam="${i}|rel" value="${esc(f.rel)}" placeholder="稱謂（點上面，或自己寫）" aria-label="稱謂" style="margin-bottom:10px">
+          <input type="text" data-fam="${i}|name" value="${esc(f.name)}" placeholder="姓名" aria-label="家屬姓名" style="margin-bottom:10px">
+          <input type="tel" inputmode="tel" data-fam="${i}|tel" value="${esc(f.tel)}" placeholder="電話" aria-label="家屬電話" style="margin-bottom:10px">
+          <label class="check ${f.sameAddr?'on':''}" style="margin-bottom:10px"><input type="checkbox" data-famsame="${i}" ${f.sameAddr?'checked':''}>住址和我一樣</label>
+          ${f.sameAddr?'':`<input type="text" data-fam="${i}|addr" value="${esc(f.addr)}" placeholder="通訊處（住址）" aria-label="家屬通訊處">`}
+        </div>`).join('')}
+      ${d.family.length<5?`<button type="button" class="btn btn-ghost" data-go="addfam" style="min-height:56px">＋ 再加一位家屬</button>`:''}
+    </div>
+    <div class="field"><span class="lbl">大頭照<span class="opt">（可不上傳，上課時再交也可以）</span></span>
+      <div class="photo">
+        ${S.photo?`<img src="${S.photo}" alt="已選的照片">`:''}
+        <div style="flex:1">
+          <label class="btn btn-line" style="min-height:58px">📷 ${S.photo?'換一張照片':'拍照或選照片'}<input type="file" accept="image/*" id="photoIn" hidden></label>
+          ${S.photo?`<button type="button" class="btn btn-ghost" data-go="rmphoto" style="min-height:50px">不要照片</button>`:''}
+        </div>
+      </div></div>
+    ${fld('referrer','介紹人',{ph:'是誰介紹您來的？'})}
+    ${fld('userNote','想跟我們說的話',{area:1})}
+    <div class="field" id="w_agree">
+      <label class="check ${d.agree?'on':''}"><input type="checkbox" data-k="agree" ${d.agree?'checked':''}><span>我同意大安寺使用以上資料辦理報名與上課聯繫<span class="req">必勾</span></span></label>
+      <p class="hint">${esc(S.settings.privacy||'')}</p>
+      <div class="errmsg">請勾選「我同意」才能送出</div></div>`;
+  return `
+    <div class="card">
+      <div class="stepinfo">第 ${n+1} 步，共 ${STEPS.length} 步</div>
+      <div class="progress">${STEPS.map((s,i)=>`<i class="${i<=n?'on':''}"></i>`).join('')}</div>
+      <h2 class="serif">${STEPS[n]}</h2>
+      <p class="sub" style="margin:-8px 0 18px">報名：${esc(S.cls.name)}</p>
+      ${body}
+    </div>`;
+}
+
+function barNav(){
+  return `<button class="btn btn-line" data-go="prev">${S.step===0?'返回':'上一步'}</button>
+          <button class="btn btn-main" data-go="next">${S.step===STEPS.length-1?'檢查一次 ➜':'下一步 ➜'}</button>`;
+}
+function barConfirm(){
+  return `<button class="btn btn-line" data-go="back">上一步</button>
+          <button class="btn btn-main" data-go="submit">✔ 確認送出報名</button>`;
+}
+
+function birthText(y,m,dd,leap){ return (y||m||dd) ? `民國${y||'＿'}年${leap?'閏':''}${m||'＿'}月${dd||'＿'}日` : ''; }
+
+function viewConfirm(){
+  const d = S.d;
+  const it = (k,v) => `<dt>${k}</dt><dd class="${v?'':'empty'}">${v?esc(v):'（沒有填）'}</dd>`;
+  const sec = (title, step, inner) => `<div class="sec"><h3>${title}<button class="edit" data-edit="${step}">修改</button></h3><dl>${inner}</dl></div>`;
+  const fam = d.family.filter(f=>f.name||f.tel);
+  return `
+  <div class="card">
+    <h2 class="serif">請檢查一次，沒問題就按「確認送出」</h2>
+    <p class="sub">報名班別：<b>${esc(S.cls.name)}</b></p>
+  </div>
+  <div class="card review">
+    ${sec('基本資料',0, it('姓名',d.name)+it('性別',d.gender)+it('手機',d.mobile)+it('住家電話',d.homeTel))}
+    ${sec('生日與身分證',1, it('出生日（國曆）',birthText(d.bsY,d.bsM,d.bsD))+it('出生日（農曆）',birthText(d.blY,d.blM,d.blD,d.blLeap))+it('出生時辰',d.birthHour)+it('身分證字號',d.idNo))}
+    ${sec('住址',2, it('通訊住址',[d.mailZip,d.mailAddr].filter(Boolean).join(' '))+it('戶籍住址',d.sameAddr?(d.mailAddr?'同通訊住址':''):[d.regZip,d.regAddr].filter(Boolean).join(' ')))}
+    ${sec('工作與其他',3, it('職業',d.job)+it('服務機關',d.org)+it('公司電話',d.orgTel)+it('經歷',d.experience)+it('語言',d.language)+it('信仰',d.faith))}
+    ${sec('家屬與相片',4, it('家屬', fam.map(f=>[f.rel,f.name,f.tel].filter(Boolean).join(' ')).join('、'))+it('大頭照',S.photo?'已附照片':'')+it('介紹人',d.referrer)+it('想說的話',d.userNote))}
+  </div>`;
+}
+
+function viewDone(){
+  const r = S.result, c = S.cls;
+  return `
+  <div class="card done">
+    <div class="ok"><svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <h1 class="serif">${r.dup?'您已經報名過了':'報名成功！'}</h1>
+    <p>${esc(r.name)}${r.dup?' ':''}${r.dup?'先前已完成報名，不需要再報名。':'，感恩您的報名。'}</p>
+    <div class="sub">您的報名編號</div>
+    <div class="no">${esc(String(r.id).toUpperCase())}</div>
+    <p class="hint">建議把這個畫面「截圖」保存起來</p>
+    <div class="remind">
+      <b>📅 請記得來上課</b><br>
+      ${c.intro?`開班說明：${esc(c.intro)}<br>`:''}
+      ${c.start?`開班日期：${esc(c.start)}<br>`:''}
+      ${c.place?`地點：${esc(c.place)}<br>`:''}
+      ${c.address?`地址：${esc(c.address)}`:''}
+    </div>
+    <button class="btn btn-main" data-go="family">幫家人或朋友也報名</button>
+    <button class="btn btn-line" data-go="home">回到首頁</button>
+    ${c.address?`<a class="btn btn-line" style="margin-top:12px" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.address)}">🗺️ 看地圖怎麼去</a>`:''}
+  </div>`;
+}
+
+function viewError(){
+  return `<div class="card"><h2>網路好像不太順</h2><p>請稍等一下再試一次，或直接打電話報名。</p>
+    <p class="hint">${esc(S.err)}</p>
+    <button class="btn btn-main" onclick="location.reload()">再試一次</button>
+    <div style="margin-top:12px">${contactBtns()}</div></div>`;
+}
+
+/* ========== 事件 ========== */
+function bind(){
+  document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => {
+    S.cls = S.classes.find(c => c.code === b.dataset.pick); S.screen = 'info';
+    history.replaceState(null,'','?c='+encodeURIComponent(S.cls.code)); render();
+  });
+  document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
+  document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { S.step = +b.dataset.edit; S.screen = 'form'; render(); });
+  document.querySelectorAll('[data-gender]').forEach(b => b.onclick = () => {
+    S.d.gender = b.dataset.gender; saveDraft();
+    document.querySelectorAll('[data-gender]').forEach(x => x.classList.toggle('on', x === b));
+    $('#w_gender').classList.remove('bad');
+  });
+  document.querySelectorAll('[data-k]').forEach(el => {
+    const k = el.dataset.k;
+    const h = () => {
+      if (el.type === 'checkbox') {
+        S.d[k] = el.checked; el.closest('.check') && el.closest('.check').classList.toggle('on', el.checked);
+        if (k === 'sameAddr') { saveDraft(); render(); return; }
+        if (k === 'agree' && el.checked) $('#w_agree').classList.remove('bad');
+      } else {
+        let v = el.value;
+        if (k === 'idNo') { v = v.toUpperCase().replace(/\s/g,''); if (v !== el.value) el.value = v; }
+        if (['bsY','bsM','bsD','blY','blM','blD','mailZip','regZip'].includes(k)) { v = v.replace(/\D/g,''); if (v !== el.value) el.value = v; }
+        S.d[k] = v;
+        const w = el.closest('.field'); w && w.classList.remove('bad');
+      }
+      saveDraft();
+    };
+    el.addEventListener(el.tagName === 'SELECT' || el.type === 'checkbox' ? 'change' : 'input', h);
+  });
+  document.querySelectorAll('[data-fam]').forEach(el => el.addEventListener('input', () => {
+    const [i,f] = el.dataset.fam.split('|'); S.d.family[+i][f] = el.value; saveDraft();
+    if (f === 'rel') el.parentNode.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.textContent === el.value));
+  }));
+  document.querySelectorAll('[data-rel]').forEach(b => b.onclick = () => {
+    const [i,r] = b.dataset.rel.split('|'); S.d.family[+i].rel = r === '其他' ? '' : r; saveDraft(); render();
+    if (r === '其他') { const inp = document.querySelector(`[data-fam="${i}|rel"]`); inp && inp.focus(); }
+  });
+  document.querySelectorAll('[data-famsame]').forEach(el => el.onchange = () => { S.d.family[+el.dataset.famsame].sameAddr = el.checked; saveDraft(); render(); });
+  document.querySelectorAll('[data-rmfam]').forEach(b => b.onclick = () => { S.d.family.splice(+b.dataset.rmfam,1); saveDraft(); render(); });
+  const pi = $('#photoIn'); if (pi) pi.onchange = () => pi.files[0] && loadPhoto(pi.files[0]);
+  const id = $('#f_idNo'); if (id) id.onblur = checkId;
+}
+
+function go(a){
+  if (a === 'start') { S.d = blank(); S.photo = null; S.step = 0; S.screen = 'form'; LS.del(draftKey()); render(); }
+  else if (a === 'resume') { const dr = LS.get(draftKey()); S.d = Object.assign(blank(), dr.d); S.step = dr.step || 0; S.screen = 'form'; render(); }
+  else if (a === 'pick') { S.screen = 'pick'; render(); }
+  else if (a === 'prev') { if (S.step === 0) { S.screen = 'info'; } else S.step--; saveDraft(); render(); }
+  else if (a === 'next') { if (!validate()) return; if (S.step < STEPS.length-1) S.step++; else S.screen = 'confirm'; saveDraft(); render(); }
+  else if (a === 'back') { S.screen = 'form'; S.step = STEPS.length-1; render(); }
+  else if (a === 'submit') submit();
+  else if (a === 'addfam') { S.d.family.push({rel:'',name:'',tel:'',addr:'',sameAddr:true}); saveDraft(); render(); setTimeout(()=>window.scrollTo(0,document.body.scrollHeight*.5),0); }
+  else if (a === 'rmphoto') { S.photo = null; render(); }
+  else if (a === 'home') { S.screen = 'info'; render(); }
+  else if (a === 'family') {
+    const p = S.d, n = blank();
+    Object.assign(n, { mailZip:p.mailZip, mailAddr:p.mailAddr, sameAddr:p.sameAddr, regZip:p.regZip, regAddr:p.regAddr, homeTel:p.homeTel, referrer:p.referrer,
+      family:[{rel:'',name:p.name,tel:p.mobile||p.homeTel,addr:'',sameAddr:true}] });
+    S.d = n; S.photo = null; S.step = 0; S.screen = 'form'; render();
+  }
+}
+
+function bad(k, msg){
+  const w = $('#w_'+k); if (!w) return;
+  w.classList.add('bad'); const e = w.querySelector('.errmsg'); if (e && msg) e.textContent = msg;
+}
+
+function validate(){
+  const d = S.d; let ok = true, first = null;
+  const fail = (k,m) => { bad(k,m); ok = false; first = first || k; };
+  if (S.step === 0) {
+    if (!d.name.trim()) fail('name','請寫上您的姓名');
+    if (!d.gender) fail('gender');
+    const mob = d.mobile.replace(/\D/g,'');
+    if (!mob && !d.homeTel.trim()) fail('mobile','手機或住家電話，請至少填一個');
+    else if (mob && !/^09\d{8}$/.test(mob)) fail('mobile','手機號碼是 09 開頭、共 10 個數字，請再看一下');
+    else if (mob) d.mobile = mob.replace(/^(\d{4})(\d{3})(\d{3})$/,'$1-$2-$3');
+  }
+  if (S.step === 4 && !d.agree) fail('agree');
+  if (!ok) { const el = $('#w_'+first); el && el.scrollIntoView({behavior:'smooth',block:'center'}); }
+  return ok;
+}
+
+function checkId(){
+  const v = S.d.idNo, box = $('#x_idNo'); if (!box) return;
+  box.innerHTML = v && !twIdOk(v) ? '<div class="warnmsg">⚠ 號碼好像怪怪的，請再對一次（不確定也可以先送出）</div>' : '';
+}
+function twIdOk(id){
+  if (!/^[A-Z][12890]\d{8}$/.test(id) && !/^[A-Z][A-D]\d{8}$/.test(id)) return false;
+  const L = 'ABCDEFGHJKLMNPQRSTUVXYWZIO', n = L.indexOf(id[0]) + 10;
+  const second = /\d/.test(id[1]) ? +id[1] : (L.indexOf(id[1]) + 10) % 10;
+  const digits = [Math.floor(n/10), n%10, second, ...id.slice(2).split('').map(Number)];
+  const w = [1,9,8,7,6,5,4,3,2,1,1];
+  return digits.reduce((s,x,i)=>s+x*w[i],0) % 10 === 0;
+}
+
+function loadPhoto(file){
+  const img = new Image(), url = URL.createObjectURL(file);
+  img.onload = () => {
+    const max = 640, sc = Math.min(1, max / Math.max(img.width, img.height));
+    const c = document.createElement('canvas'); c.width = Math.round(img.width*sc); c.height = Math.round(img.height*sc);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    S.photo = c.toDataURL('image/jpeg', .82); URL.revokeObjectURL(url); render();
+  };
+  img.onerror = () => alertBox('這張照片讀不到，請換一張試試');
+  img.src = url;
+}
+
+function overlay(html){ $('#overlaySlot').innerHTML = html ? `<div class="overlay"><div class="box">${html}</div></div>` : ''; }
+function alertBox(msg){ overlay(`<p style="margin:0 0 18px">${esc(msg)}</p><button class="btn btn-main" id="okBtn">知道了</button>`); $('#okBtn').onclick = () => overlay(''); }
+
+async function submit(){
+  const d = S.d;
+  const fam = d.family.filter(f=>f.name||f.tel).map(f=>({rel:f.rel,name:f.name,tel:f.tel,addr:f.sameAddr?([d.mailZip,d.mailAddr].filter(Boolean).join(' ')||'同本人'):f.addr}));
+  const data = {
+    name:d.name.trim(), gender:d.gender, mobile:d.mobile, homeTel:d.homeTel,
+    birthSolar:birthText(d.bsY,d.bsM,d.bsD), birthLunar:birthText(d.blY,d.blM,d.blD,d.blLeap), birthHour:d.birthHour==='不知道'?'':d.birthHour,
+    idNo:d.idNo, mailZip:d.mailZip, mailAddr:d.mailAddr,
+    regZip:d.sameAddr?d.mailZip:d.regZip, regAddr:d.sameAddr?d.mailAddr:d.regAddr,
+    job:d.job, org:d.org, orgTel:d.orgTel, experience:d.experience, language:d.language, faith:d.faith,
+    family:fam, referrer:d.referrer, userNote:d.userNote
+  };
+  overlay('<div class="spin"></div>報名資料送出中…<br><span style="font-weight:400;font-size:.9rem">請不要關掉畫面</span>');
+  try{
+    const r = await API.call('register', { classCode:S.cls.code, data, photo:S.photo });
+    overlay('');
+    if (!r.ok) return alertBox(r.msg || '送出失敗，請再試一次');
+    S.result = { id:r.id, dup:!!r.dup, name:data.name };
+    LS.del(draftKey()); S.screen = 'done'; render();
+  }catch(e){
+    overlay(`<p style="margin:0 0 6px">網路不太順，資料還沒送出</p><p class="hint" style="margin:0 0 18px">您填的資料都還在，請再按一次</p>
+      <button class="btn btn-main" id="retryBtn">再送一次</button><button class="btn btn-line" id="okBtn">先不要</button>`);
+    $('#retryBtn').onclick = submit; $('#okBtn').onclick = () => overlay('');
+  }
+}
+
+init();
+})();
+</script>
+</body>
+</html>

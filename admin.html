@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>大安寺報名後台</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23463526'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='%23f3e3bd'%3E管%3C/text%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="config.js"></script>
+<script src="api.js"></script>
+<style>
+:root{
+  --bg:#f3ede2; --paper:#fffdf8; --ink:#2b2017; --muted:#6f604d; --line:#e0d3bb; --head:#463526; --head-ink:#f6ead2;
+  --red:#8f2a1c; --red-soft:#f7e3dc; --gold:#a87a22; --gold-soft:#f5e7c6; --ok:#2e6a3a; --ok-soft:#e0efdf;
+  --err:#b3261e; --err-soft:#fbe4e1; --blue:#2c5d8a; --blue-soft:#e1ecf6; --row:#faf5ea;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1713; --paper:#252019; --ink:#f1e8d8; --muted:#bcae96; --line:#43382b; --head:#120f0c; --head-ink:#f1e2c2;
+    --red:#d2604b; --red-soft:#3b231d; --gold:#d6a94d; --gold-soft:#372d1b; --ok:#7cc289; --ok-soft:#1f3322;
+    --err:#ff8a7e; --err-soft:#3d1f1c; --blue:#8ab8e6; --blue-soft:#1d2a38; --row:#2b251d;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1b1713; --paper:#252019; --ink:#f1e8d8; --muted:#bcae96; --line:#43382b; --head:#120f0c; --head-ink:#f1e2c2;
+  --red:#d2604b; --red-soft:#3b231d; --gold:#d6a94d; --gold-soft:#372d1b; --ok:#7cc289; --ok-soft:#1f3322;
+  --err:#ff8a7e; --err-soft:#3d1f1c; --blue:#8ab8e6; --blue-soft:#1d2a38; --row:#2b251d;
+}
+*{box-sizing:border-box}
+html{font-size:17px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;line-height:1.55}
+button,input,select,textarea{font:inherit;color:inherit}
+.serif{font-family:"Noto Serif TC",serif}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+header{background:var(--head);color:var(--head-ink)}
+header .wrap{display:flex;align-items:center;gap:16px;min-height:62px;flex-wrap:wrap}
+header h1{font-size:1.15rem;margin:0;flex:1;letter-spacing:.05em}
+header h1 small{font-family:"Noto Sans TC";font-weight:400;opacity:.75;font-size:.8rem;margin-left:8px}
+nav{display:flex;gap:4px;overflow-x:auto;background:var(--paper);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+nav .wrap{display:flex;gap:4px}
+nav button{border:0;background:none;padding:14px 18px;font-weight:700;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+nav button.on{color:var(--red);border-bottom-color:var(--red)}
+main{padding:20px 0 60px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+h2{font-size:1.2rem;margin:0 0 12px}
+h3{font-size:1.02rem;margin:18px 0 10px;color:var(--red)}
+.btn{color:var(--ink);display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:8px 16px;border-radius:10px;border:1.5px solid var(--line);background:var(--paper);font-weight:700;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:var(--gold)}
+.btn.main{background:var(--red);border-color:var(--red);color:#fff}
+.btn.dark{background:var(--head);border-color:var(--head);color:var(--head-ink)}
+.btn.danger{color:var(--err);border-color:var(--err)}
+.btn.sm{min-height:34px;padding:4px 10px;font-size:.88rem}
+.btn:disabled{opacity:.5;cursor:default}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.tools .grow{flex:1;min-width:200px}
+input[type=text],input[type=password],input[type=tel],input[type=number],input[type=date],select,textarea{min-height:42px;padding:8px 12px;border:1.5px solid var(--line);border-radius:9px;background:var(--paper);width:100%}
+textarea{min-height:70px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+label.f{display:block;font-size:.85rem;color:var(--muted);font-weight:500;margin-bottom:4px}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)}
+@media (max-width:760px){ .g2,.g3,.g4{grid-template-columns:1fr 1fr} }
+@media (max-width:480px){ .g2,.g3,.g4{grid-template-columns:1fr} }
+.span2{grid-column:span 2} .spanall{grid-column:1/-1}
+@media (max-width:480px){ .span2{grid-column:auto} }
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+.stat .n{font-size:1.9rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat .l{color:var(--muted);font-size:.85rem}
+
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
+table.list{width:100%;border-collapse:collapse;font-size:.95rem}
+table.list th{background:var(--gold-soft);text-align:left;padding:10px 12px;font-weight:700;white-space:nowrap;position:sticky;top:0}
+table.list td{padding:10px 12px;border-top:1px solid var(--line);white-space:nowrap}
+table.list tbody tr{cursor:pointer}
+table.list tbody tr:hover{background:var(--row)}
+table.list td.num{font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.8rem;font-weight:700}
+.st-已報名{background:var(--blue-soft);color:var(--blue)}
+.st-已聯絡{background:var(--gold-soft);color:var(--gold)}
+.st-已繳費{background:var(--ok-soft);color:var(--ok)}
+.st-取消{background:var(--err-soft);color:var(--err)}
+.st-開放報名{background:var(--ok-soft);color:var(--ok)}
+.st-截止報名{background:var(--err-soft);color:var(--err)}
+.st-未開放{background:var(--line);color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:40px}
+
+/* 登入 */
+.login{max-width:380px;margin:9vh auto;text-align:center}
+.login .card{padding:28px}
+.login input{font-size:1.1rem;min-height:52px;text-align:center;margin:14px 0}
+.login .btn{width:100%;min-height:52px;font-size:1.05rem}
+
+/* 彈窗 */
+.modal{position:fixed;inset:0;background:rgba(20,12,6,.5);z-index:40;display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:24px 12px}
+.modal .box{background:var(--paper);border-radius:14px;width:100%;max-width:900px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.modal .mh{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);position:sticky;top:-24px;background:var(--paper);border-radius:14px 14px 0 0;z-index:2}
+.modal .mh h2{margin:0;flex:1}
+.modal .mb{padding:4px 20px 20px}
+.modal .mf{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;padding:14px 20px;border-top:1px solid var(--line);position:sticky;bottom:-24px;background:var(--paper);border-radius:0 0 14px 14px}
+.x{border:0;background:none;font-size:1.6rem;cursor:pointer;color:var(--muted);line-height:1;padding:4px 8px}
+.photoBox{width:120px;height:150px;border:1.5px dashed var(--line);border-radius:8px;display:grid;place-items:center;color:var(--muted);font-size:.85rem;overflow:hidden;background:var(--row)}
+.photoBox img{width:100%;height:100%;object-fit:cover}
+.payform{margin-top:10px;grid-template-columns:1.2fr 1.3fr 1fr 1fr 1.4fr auto;align-items:end}
+@media (max-width:760px){ .payform{grid-template-columns:1fr 1fr} }
+.famrow{display:grid;grid-template-columns:1fr 1.2fr 1.4fr 2.4fr auto;gap:8px;margin-bottom:8px}
+@media (max-width:640px){ .famrow{grid-template-columns:1fr 1fr} }
+table.pay{width:100%;border-collapse:collapse;font-size:.92rem}
+table.pay td,table.pay th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--head);color:var(--head-ink);padding:12px 22px;border-radius:10px;z-index:60;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.toast.err{background:var(--err);color:#fff}
+.demo{background:var(--gold-soft);color:var(--ink);font-size:.85rem;text-align:center;padding:6px}
+
+/* QR */
+.qrlayout{display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start}
+@media (max-width:760px){ .qrlayout{grid-template-columns:1fr} }
+.qrbox{background:#fff;border-radius:12px;padding:16px;text-align:center;border:1px solid var(--line)}
+.qrbox canvas{width:100%;max-width:280px;height:auto;image-rendering:pixelated}
+.linkbox{font-family:ui-monospace,Menlo,monospace;background:var(--row);border:1px solid var(--line);border-radius:8px;padding:10px;word-break:break-all;font-size:.9rem}
+.classlist .item{display:flex;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.classlist .item:last-child{border-bottom:0}
+.classlist .info{flex:1;min-width:220px}
+.classlist b{font-size:1.05rem}
+.muted{color:var(--muted);font-size:.88rem}
+</style>
+</head>
+<body>
+<div id="demoBanner" class="demo" hidden>展示模式（尚未連接 Google 試算表）— 密碼：daan1234，資料只存在這台電腦</div>
+<div id="root"></div>
+<div id="modalSlot"></div>
+<div id="toastSlot"></div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const SS = { get(k){ try{return localStorage.getItem(k);}catch(e){return null;} }, set(k,v){ try{localStorage.setItem(k,v);}catch(e){} }, del(k){ try{localStorage.removeItem(k);}catch(e){} } };
+if (API.isDemo) $('#demoBanner').hidden = false;
+
+const STATUSES = ['已報名','已聯絡','已繳費','取消'];
+const CLASS_STATUS = ['開放報名','截止報名','未開放'];
+const HOURS = ['子時（晚上11點～半夜1點）','丑時（半夜1點～3點）','寅時（凌晨3點～5點）','卯時（早上5點～7點）','辰時（早上7點～9點）','巳時（上午9點～11點）','午時（中午11點～下午1點）','未時（下午1點～3點）','申時（下午3點～5點）','酉時（傍晚5點～7點）','戌時（晚上7點～9點）','亥時（晚上9點～11點）'];
+const PAY_ITEMS = ['學費','講義費','功德基金會會費','其他'];
+
+const A = { token: SS.get('daansi_admin_token'), tab: SS.get('daansi_admin_tab') || 'regs', data: null,
+  cls: SS.get('daansi_admin_cls') || '', q: '', st: '', qrCls: '' };
+
+async function api(action, payload){
+  try{
+    const r = await API.call(action, Object.assign({ token: A.token }, payload || {}));
+    if (r && r.auth === false) { logout(true); throw new Error(r.msg); }
+    return r;
+  }catch(e){ toast(e.message || '連線失敗', true); return { ok:false, msg:e.message }; }
+}
+function toast(msg, err){
+  $('#toastSlot').innerHTML = `<div class="toast ${err?'err':''}">${esc(msg)}</div>`;
+  clearTimeout(toast.t); toast.t = setTimeout(()=>$('#toastSlot').innerHTML='', 2600);
+}
+
+/* ========== 登入 ========== */
+function viewLogin(){
+  $('#root').innerHTML = `
+  <div class="login wrap"><div class="card">
+    <div class="serif" style="font-size:1.4rem;font-weight:900;color:var(--red)">大安寺報名後台</div>
+    <div class="muted">易經大學 學員報名管理</div>
+    <form id="lf"><input type="password" id="pw" placeholder="請輸入後台密碼" autocomplete="current-password" autofocus>
+    <button class="btn main" type="submit">登入</button></form>
+    <div id="lmsg" style="color:var(--err);margin-top:10px;font-weight:700"></div>
+  </div></div>`;
+  $('#lf').onsubmit = async e => {
+    e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true; b.textContent = '登入中…';
+    const r = await API.call('login', { password: $('#pw').value }).catch(err => ({ok:false,msg:err.message}));
+    if (r.ok) { A.token = r.token; SS.set('daansi_admin_token', r.token); load(); }
+    else { $('#lmsg').textContent = r.msg || '登入失敗'; b.disabled = false; b.textContent = '登入'; }
+  };
+}
+async function logout(silent){
+  if (!silent) await API.call('logout', { token:A.token }).catch(()=>{});
+  A.token = null; A.data = null; SS.del('daansi_admin_token'); viewLogin();
+}
+
+/* ========== 主框架 ========== */
+async function load(){
+  if (!A.token) return viewLogin();
+  if (!A.data) $('#root').innerHTML = '<div class="empty">資料載入中…</div>';
+  const r = await api('adminData');
+  if (!r.ok) { if (!A.token) return; $('#root').innerHTML = `<div class="empty">讀取失敗：${esc(r.msg)}<br><br><button class="btn" onclick="location.reload()">重新整理</button></div>`; return; }
+  A.data = r;
+  A.data.classes.sort((a,b)=>(+b.sort||0)-(+a.sort||0));
+  if (!A.cls || !A.data.classes.some(c=>c.code===A.cls)) A.cls = (A.data.classes[0]||{}).code || '';
+  if (!A.qrCls) A.qrCls = A.cls;
+  frame();
+}
+
+function frame(){
+  const tabs = [['regs','📋 報名名單'],['classes','🏫 班別管理'],['qr','🔳 報名 QR Code'],['settings','⚙️ 設定']];
+  $('#root').innerHTML = `
+  <header><div class="wrap"><h1 class="serif">${esc(A.data.settings.orgName||'大安寺')}<small>報名後台</small></h1>
+    <a class="btn sm" href="./" target="_blank" style="background:transparent;color:var(--head-ink);border-color:rgba(255,255,255,.3)">看報名頁 ↗</a>
+    <button class="btn sm" id="outBtn" style="background:transparent;color:var(--head-ink);border-color:rgba(255,255,255,.3)">登出</button></div></header>
+  <nav><div class="wrap">${tabs.map(t=>`<button data-tab="${t[0]}" class="${A.tab===t[0]?'on':''}">${t[1]}</button>`).join('')}</div></nav>
+  <main><div class="wrap" id="tabBody"></div></main>`;
+  $$('[data-tab]').forEach(b => b.onclick = () => { A.tab = b.dataset.tab; SS.set('daansi_admin_tab', A.tab); frame(); });
+  $('#outBtn').onclick = () => logout();
+  ({ regs:tabRegs, classes:tabClasses, qr:tabQR, settings:tabSettings })[A.tab]();
+}
+
+const clsName = code => (A.data.classes.find(c=>c.code===code)||{}).name || code;
+const paidOf = id => A.data.pays.filter(p=>p.regId===id).reduce((s,p)=>s+(Number(p.amount)||0),0);
+const classOptions = sel => A.data.classes.map(c=>`<option value="${esc(c.code)}" ${c.code===sel?'selected':''}>${esc(c.name)}</option>`).join('');
+
+/* ========== 報名名單 ========== */
+function tabRegs(){
+  const body = $('#tabBody');
+  if (!A.data.classes.length) { body.innerHTML = `<div class="card empty">還沒有任何班別，請先到「班別管理」新增。</div>`; return; }
+  body.innerHTML = `
+  <div class="tools">
+    <select id="clsSel" style="max-width:320px">${classOptions(A.cls)}</select>
+    <input type="text" id="q" class="grow" placeholder="🔍 搜尋姓名、電話、編號" value="${esc(A.q)}">
+    <select id="stSel" style="max-width:140px"><option value="">全部狀態</option>${STATUSES.map(s=>`<option ${A.st===s?'selected':''}>${s}</option>`).join('')}</select>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="tools">
+    <button class="btn main" id="addBtn">＋ 手動新增報名</button>
+    <button class="btn" id="seatBtn">自動編座號</button>
+    <button class="btn" id="csvBtn">⬇ 匯出 Excel (CSV)</button>
+    <button class="btn" id="printAll">🖨 列印本班學員資料表</button>
+    <button class="btn" id="printRoster">🖨 列印點名單</button>
+    <button class="btn" id="reload" title="重新讀取最新資料">↻ 重新整理</button>
+  </div>
+  <div class="tbl-wrap"><table class="list"><thead><tr>
+    <th>報名編號</th><th>座號</th><th>姓名</th><th>性別</th><th>手機</th><th>住家電話</th><th>報名時間</th><th>方式</th><th>狀態</th><th style="text-align:right">已繳金額</th>
+  </tr></thead><tbody id="tb"></tbody></table></div>`;
+  $('#clsSel').onchange = e => { A.cls = e.target.value; SS.set('daansi_admin_cls', A.cls); drawRegs(); };
+  $('#q').oninput = e => { A.q = e.target.value; drawRegs(); };
+  $('#stSel').onchange = e => { A.st = e.target.value; drawRegs(); };
+  $('#addBtn').onclick = () => openReg(null);
+  $('#seatBtn').onclick = async () => {
+    if (!confirm('依照報名順序，幫還沒有座號的學員自動編號（已有座號的不會變動）。要繼續嗎？')) return;
+    const r = await api('autoSeat', { classCode:A.cls }); if (r.ok) { toast(`已編 ${r.count} 位座號`); load(); }
+  };
+  $('#csvBtn').onclick = exportCSV;
+  $('#printAll').onclick = () => printForms(regsOf(A.cls).filter(r=>r.status!=='取消'));
+  $('#printRoster').onclick = printRoster;
+  $('#reload').onclick = () => { load(); toast('已更新'); };
+  drawRegs();
+}
+function regsOf(code){
+  return A.data.regs.filter(r=>r.classCode===code).sort((a,b)=>{
+    const sa = +a.seat||9999, sb = +b.seat||9999; return sa-sb || String(a.id).localeCompare(b.id);
+  });
+}
+function drawRegs(){
+  const all = regsOf(A.cls), act = all.filter(r=>r.status!=='取消');
+  const q = A.q.trim().toLowerCase(), qd = q.replace(/\D/g,'');
+  const list = all.filter(r => (!A.st || r.status===A.st) && (!q ||
+    [r.name,r.id,r.idNo,r.referrer].some(v=>String(v||'').toLowerCase().includes(q)) ||
+    (qd && [r.mobile,r.homeTel].some(v=>String(v||'').replace(/\D/g,'').includes(qd)))));
+  const cls = A.data.classes.find(c=>c.code===A.cls)||{};
+  $('#stats').innerHTML = [
+    [act.length + (cls.quota?` / ${cls.quota}`:''),'報名人數'+(cls.quota?'／名額':'')],
+    [act.filter(r=>r.gender==='男').length,'男'],[act.filter(r=>r.gender==='女').length,'女'],
+    [act.filter(r=>r.status==='已繳費').length,'已繳費'],
+    [all.filter(r=>r.status==='取消').length,'取消'],
+    ['$'+act.reduce((s,r)=>s+paidOf(r.id),0).toLocaleString(),'已收金額']
+  ].map(s=>`<div class="stat"><div class="n">${s[0]}</div><div class="l">${s[1]}</div></div>`).join('');
+  $('#tb').innerHTML = list.length ? list.map(r=>`<tr data-id="${esc(r.id)}">
+    <td class="num">${esc(r.id)}</td><td class="num">${esc(r.seat)}</td><td><b>${esc(r.name)}</b></td><td>${esc(r.gender)}</td>
+    <td class="num">${esc(r.mobile)}</td><td class="num">${esc(r.homeTel)}</td><td class="num">${esc(r.createdAt)}</td><td class="muted">${esc(r.source||'線上報名')}</td>
+    <td><span class="pill st-${esc(r.status)}">${esc(r.status)}</span></td><td class="num" style="text-align:right">${paidOf(r.id)?'$'+paidOf(r.id).toLocaleString():''}</td></tr>`).join('')
+    : `<tr><td colspan="10" class="empty">${all.length?'找不到符合的資料':'這一班還沒有人報名'}</td></tr>`;
+  $$('#tb tr[data-id]').forEach(tr => tr.onclick = () => openReg(A.data.regs.find(r=>r.id===tr.dataset.id)));
+}
+
+/* ----- 單筆資料彈窗 ----- */
+function openReg(r){
+  const isNew = !r;
+  r = r || { classCode:A.cls, status:'已報名', family:[] };
+  const fam = (r.family && r.family.length ? r.family : [{}]).map(f=>Object.assign({rel:'',name:'',tel:'',addr:''},f));
+  const pays = isNew ? [] : A.data.pays.filter(p=>p.regId===r.id);
+  const inp = (k,l,cls,type) => `<div class="${cls||''}"><label class="f">${l}</label><input type="${type||'text'}" data-f="${k}" value="${esc(r[k])}"></div>`;
+  $('#modalSlot').innerHTML = `
+  <div class="modal" id="mdl"><div class="box">
+    <div class="mh"><h2 class="serif">${isNew?'手動新增報名':esc(r.name)+'　<span class="muted">'+esc(r.id)+'</span>'}</h2><button class="x" data-close>×</button></div>
+    <div class="mb">
+      <h3>報名狀態</h3>
+      <div class="grid g4">
+        <div class="span2"><label class="f">班別</label><select data-f="classCode">${classOptions(r.classCode)}</select></div>
+        <div><label class="f">狀態</label><select data-f="status">${STATUSES.map(s=>`<option ${r.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+        ${inp('seat','座號','', 'text')}
+      </div>
+      <h3>基本資料</h3>
+      <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+        <div class="grid g3" style="flex:1;min-width:260px">
+          ${inp('name','姓名 *')}
+          <div><label class="f">性別</label><select data-f="gender"><option value=""></option>${['男','女'].map(g=>`<option ${r.gender===g?'selected':''}>${g}</option>`).join('')}</select></div>
+          ${inp('idNo','身分證字號')}
+          ${inp('birthSolar','出生日(國曆)')}
+          ${inp('birthLunar','出生日(農曆)')}
+          <div><label class="f">出生時辰</label><select data-f="birthHour"><option value=""></option>${HOURS.map(h=>`<option ${r.birthHour===h?'selected':''}>${h}</option>`).join('')}${r.birthHour&&!HOURS.includes(r.birthHour)?`<option selected>${esc(r.birthHour)}</option>`:''}</select></div>
+          ${inp('mobile','行動電話','','tel')}${inp('homeTel','住家電話','','tel')}${inp('referrer','介紹人')}
+        </div>
+        <div><div class="photoBox" id="photoBox">${r.photoId?'相片載入中…':'沒有相片'}</div></div>
+      </div>
+      <h3>住址</h3>
+      <div class="grid g4">
+        ${inp('mailZip','通訊郵遞區號')}${inp('mailAddr','通訊住址','span2" style="grid-column:span 3')}
+        ${inp('regZip','戶籍郵遞區號')}${inp('regAddr','戶籍住址','span2" style="grid-column:span 3')}
+      </div>
+      <h3>工作與其他</h3>
+      <div class="grid g3">
+        ${inp('job','職業')}${inp('org','服務機關')}${inp('orgTel','公司電話')}
+        ${inp('experience','經歷')}${inp('language','語言')}${inp('faith','信仰')}
+      </div>
+      <h3>家屬資料</h3>
+      <div id="famBox">${fam.map(famRow).join('')}</div>
+      <button class="btn sm" id="addFam">＋ 加一位家屬</button>
+      <h3>備註</h3>
+      <div class="grid g2">
+        <div><label class="f">學員留言</label><textarea data-f="userNote">${esc(r.userNote)}</textarea></div>
+        <div><label class="f">管理備註（學員看不到）</label><textarea data-f="adminNote">${esc(r.adminNote)}</textarea></div>
+      </div>
+      ${isNew?'':`
+      <h3>各項繳款記錄</h3>
+      <table class="pay"><thead><tr><th>項目</th><th>日期</th><th>金額</th><th>經手人</th><th>備註</th><th></th></tr></thead>
+      <tbody>${pays.length?pays.map(p=>`<tr><td>${esc(p.item)}</td><td>${esc(p.date)}</td><td>$${Number(p.amount||0).toLocaleString()}</td><td>${esc(p.handler)}</td><td>${esc(p.note)}</td><td><button class="btn sm danger" data-delpay="${esc(p.pid)}">刪除</button></td></tr>`).join(''):'<tr><td colspan="6" class="muted">尚無繳款記錄</td></tr>'}</tbody></table>
+      <div class="grid payform" id="payForm">
+        <div><label class="f">項目</label><input type="text" list="payItems" id="pItem" value="學費"><datalist id="payItems">${PAY_ITEMS.map(i=>`<option>${i}</option>`).join('')}</datalist></div>
+        <div><label class="f">日期</label><input type="date" id="pDate" value="${new Date().toISOString().slice(0,10)}"></div>
+        <div><label class="f">金額</label><input type="number" id="pAmt" inputmode="numeric"></div>
+        <div><label class="f">經手人</label><input type="text" id="pHand" value="${esc(SS.get('daansi_handler')||'')}"></div>
+        <div><label class="f">備註</label><input type="text" id="pNote"></div>
+        <button class="btn dark" id="addPay">記一筆</button>
+      </div>
+      <p class="muted">報名時間：${esc(r.createdAt)}　｜　報名方式：${esc(r.source||'線上報名')}　｜　最後更新：${esc(r.updatedAt)}</p>`}
+    </div>
+    <div class="mf">
+      ${isNew?'':`<button class="btn danger" id="delReg" style="margin-right:auto">刪除這筆</button><button class="btn" id="printOne">🖨 列印學員資料表</button>`}
+      <button class="btn" data-close>取消</button>
+      <button class="btn main" id="saveReg">${isNew?'新增':'儲存'}</button>
+    </div>
+  </div></div>`;
+  const m = $('#mdl');
+  m.querySelectorAll('[data-close]').forEach(b=>b.onclick = closeModal);
+  m.onclick = e => { if (e.target === m) closeModal(); };
+  $('#addFam').onclick = () => $('#famBox').insertAdjacentHTML('beforeend', famRow({}));
+  if (r.photoId) api('getPhoto',{photoId:r.photoId}).then(p => { const b=$('#photoBox'); if(b) b.innerHTML = p.ok?`<img src="${p.dataUrl}" alt="學員相片">`:'相片讀取失敗'; });
+
+  const collect = () => {
+    const f = {}; m.querySelectorAll('[data-f]').forEach(el => f[el.dataset.f] = el.value.trim());
+    f.idNo = (f.idNo||'').toUpperCase();
+    f.family = $$('#famBox .famrow').map(row => { const o={}; row.querySelectorAll('[data-fam]').forEach(i=>o[i.dataset.fam]=i.value.trim()); return o; }).filter(x=>x.name||x.tel);
+    return f;
+  };
+  $('#saveReg').onclick = async () => {
+    const f = collect(); if (!f.name) return toast('請填姓名', true);
+    const b = $('#saveReg'); b.disabled = true;
+    const res = isNew ? await api('adminRegister',{classCode:f.classCode,data:f}) : await api('updateReg',{id:r.id,fields:f});
+    b.disabled = false;
+    if (res.ok) { toast(isNew?`已新增，編號 ${res.id}`:'已儲存'); closeModal(); load(); } else toast(res.msg||'儲存失敗', true);
+  };
+  if (!isNew) {
+    $('#delReg').onclick = async () => {
+      if (!confirm(`確定要刪除「${r.name}」的報名資料嗎？\n（連同繳款記錄一起刪除，無法復原。如果只是不來了，建議把狀態改成「取消」）`)) return;
+      const res = await api('deleteReg',{id:r.id}); if (res.ok) { toast('已刪除'); closeModal(); load(); }
+    };
+    $('#printOne').onclick = () => printForms([Object.assign({}, r, collect())]);
+    $('#addPay').onclick = async () => {
+      const amt = $('#pAmt').value; if (!amt) return toast('請填金額', true);
+      SS.set('daansi_handler', $('#pHand').value);
+      const p = { regId:r.id, name:r.name, classCode:r.classCode, item:$('#pItem').value, date:$('#pDate').value.replace(/-/g,'/'), amount:amt, handler:$('#pHand').value, note:$('#pNote').value };
+      const res = await api('addPayment',{pay:p});
+      if (res.ok) { p.pid = res.pid; A.data.pays.push(p); toast('已記錄繳款'); openReg(A.data.regs.find(x=>x.id===r.id)); drawRegs(); }
+    };
+    m.querySelectorAll('[data-delpay]').forEach(b => b.onclick = async () => {
+      if (!confirm('刪除這筆繳款記錄？')) return;
+      const res = await api('deletePayment',{pid:b.dataset.delpay});
+      if (res.ok) { A.data.pays = A.data.pays.filter(p=>p.pid!==b.dataset.delpay); openReg(A.data.regs.find(x=>x.id===r.id)); drawRegs(); }
+    });
+  }
+}
+function famRow(f){
+  return `<div class="famrow"><input type="text" data-fam="rel" placeholder="稱謂" value="${esc(f.rel)}"><input type="text" data-fam="name" placeholder="姓名" value="${esc(f.name)}">
+    <input type="text" data-fam="tel" placeholder="電話" value="${esc(f.tel)}"><input type="text" data-fam="addr" placeholder="通訊處" value="${esc(f.addr)}">
+    <button class="btn sm danger" data-rmfam type="button">✕</button></div>`;
+}
+document.addEventListener('click', e => { if (e.target.matches('[data-rmfam]')) { const r = e.target.closest('.famrow'); r && r.remove(); } });
+function closeModal(){ $('#modalSlot').innerHTML = ''; }
+
+/* ----- 匯出、列印 ----- */
+function exportCSV(){
+  const cols = [['id','報名編號'],['seat','座號'],['status','狀態'],['name','姓名'],['gender','性別'],['birthSolar','出生日(國曆)'],['birthLunar','出生日(農曆)'],['birthHour','時辰'],
+    ['idNo','身分證字號'],['mobile','行動電話'],['homeTel','住家電話'],['mailZip','通訊郵遞區號'],['mailAddr','通訊住址'],['regZip','戶籍郵遞區號'],['regAddr','戶籍住址'],
+    ['job','職業'],['org','服務機關'],['orgTel','公司電話'],['experience','經歷'],['language','語言'],['faith','信仰'],['_fam','家屬資料'],['referrer','介紹人'],
+    ['userNote','學員留言'],['adminNote','管理備註'],['_paid','已繳金額'],['createdAt','報名時間'],['source','報名方式']];
+  const rows = regsOf(A.cls).map(r => cols.map(([k]) => k==='_fam' ? (r.family||[]).map(f=>[f.rel,f.name,f.tel,f.addr].filter(Boolean).join('/')).join('；') : k==='_paid' ? paidOf(r.id) : r[k]));
+  const q = v => { v = String(v==null?'':v); if (/^[0-9-]{6,}$/.test(v)) v = '="'+v+'"'; else v = '"'+v.replace(/"/g,'""')+'"'; return v; };
+  const csv = '﻿' + [cols.map(c=>c[1]), ...rows].map(r=>r.map(q).join(',')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download = `${clsName(A.cls)}_報名名單_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+}
+
+function printWin(title, body, css){
+  const w = window.open('', '_blank'); if (!w) return toast('請允許瀏覽器開新視窗', true);
+  w.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>${esc(title)}</title>
+  <style>@page{size:A4;margin:12mm}body{font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",sans-serif;color:#000;margin:0}${css}</style></head><body>${body}
+  <script>setTimeout(()=>window.print(),400)<\/script></body></html>`);
+  w.document.close();
+}
+
+async function printForms(list){
+  if (!list.length) return toast('沒有可列印的資料', true);
+  const s = A.data.settings, photos = {};
+  for (const r of list) if (r.photoId) { const p = await api('getPhoto',{photoId:r.photoId}); if (p.ok) photos[r.id] = p.dataUrl; }
+  const v = x => esc(x||'');
+  const pages = list.map(r => {
+    const cls = clsName(r.classCode), fam = (r.family||[]).slice(0,5); while (fam.length<5) fam.push({});
+    const groups = {}; A.data.pays.filter(p=>p.regId===r.id).forEach(p => (groups[p.item||'其他'] = groups[p.item||'其他'] || []).push(p));
+    const payRows = Object.keys(groups).map(k => [k, groups[k]]); while (payRows.length < 2) payRows.push(['', []]);
+    return `<section class="pg">
+      <div class="hd"><div class="org">${v(s.orgName).replace(' ','<br>')}</div><div class="tt">${v(s.schoolName||'易經大學')}<u>　${v(cls)}　</u>學員資料表</div>
+      <div class="dt">報名編號：${v(r.id)}<br>報名日期：${v((r.createdAt||'').slice(0,10))}</div></div>
+      <table>
+        <tr><th>姓名</th><td colspan="2" class="big">${v(r.name)}</td><th>性別</th><td>${v(r.gender)}</td><th>出生日(國)</th><td colspan="2">${v(r.birthSolar)}</td><td rowspan="4" class="ph">${photos[r.id]?`<img src="${photos[r.id]}">`:'相片'}</td></tr>
+        <tr><th>座號</th><td colspan="2">${v(r.seat)}</td><th>時辰</th><td>${v((r.birthHour||'').replace(/（.*/,''))}</td><th>出生日(農)</th><td colspan="2">${v(r.birthLunar)}</td></tr>
+        <tr><th rowspan="2">身分證字號</th><td colspan="4" rowspan="2" class="big">${v(r.idNo)}</td><th>行動電話</th><td colspan="2">${v(r.mobile)}</td></tr>
+        <tr><th>住家電話</th><td colspan="2">${v(r.homeTel)}</td></tr>
+        <tr><th>通訊住址</th><td colspan="6">${v(r.mailAddr)}</td><th>郵遞區號</th><td>${v(r.mailZip)}</td></tr>
+        <tr><th>戶籍住址</th><td colspan="6">${v(r.regAddr)}</td><th>郵遞區號</th><td>${v(r.regZip)}</td></tr>
+        <tr><th>職業</th><td colspan="2">${v(r.job)}</td><th>服務機關</th><td colspan="2">${v(r.org)}</td><th>公司電話</th><td colspan="2">${v(r.orgTel)}</td></tr>
+        <tr><th>經歷</th><td colspan="2">${v(r.experience)}</td><th>語言</th><td colspan="2">${v(r.language)}</td><th>信仰</th><td colspan="2">${v(r.faith)}</td></tr>
+        <tr><td colspan="9" class="sec">家　屬　資　料</td></tr>
+        <tr class="c"><th>稱謂</th><th colspan="2">姓名</th><th colspan="4">通訊處</th><th colspan="2">電話</th></tr>
+        ${fam.map(f=>`<tr class="c"><td>${v(f.rel)}</td><td colspan="2">${v(f.name)}</td><td colspan="4">${v(f.addr)}</td><td colspan="2">${v(f.tel)}</td></tr>`).join('')}
+        <tr><td colspan="9" class="sec">各項繳款記錄表</td></tr>
+        <tr class="c"><th>項目</th><th colspan="2">日期及金額</th><th colspan="2">日期及金額</th><th colspan="2">日期及金額</th><th colspan="2">日期及金額</th></tr>
+        ${payRows.map(([item,ps])=>`<tr class="c"><td>${v(item)}</td>${[0,1,2,3].map(j=>ps[j]?`<td colspan="2">${v(ps[j].date)}　$${Number(ps[j].amount||0).toLocaleString()}</td>`:'<td colspan="2"></td>').join('')}</tr>`).join('')}
+      </table>
+      ${r.referrer||r.adminNote?`<p class="nt">介紹人：${v(r.referrer)}　　備註：${v(r.adminNote)}</p>`:''}
+    </section>`;
+  }).join('');
+  printWin('學員資料表', pages, `
+    .pg{page-break-after:always;padding-top:4mm}.pg:last-child{page-break-after:auto}
+    .hd{display:flex;align-items:flex-end;gap:12px;margin-bottom:8px}.org{font-size:15pt;font-weight:700;line-height:1.25}
+    .tt{flex:1;font-size:15pt;font-weight:700;text-align:center}.tt u{text-underline-offset:4px}.dt{font-size:9pt;text-align:right}
+    table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10.5pt}
+    th,td{border:1px solid #000;padding:6px 5px;height:30px;vertical-align:middle}
+    th{font-weight:500;letter-spacing:.1em;white-space:nowrap;width:11%}td.big{font-size:12.5pt;font-weight:700}
+    td.ph{width:20%;text-align:center;color:#999}td.ph img{max-width:100%;max-height:150px}
+    td.sec{font-size:12pt;letter-spacing:.3em;font-weight:700;background:#f2f2f2}tr.c td,tr.c th{text-align:center}.nt{font-size:10pt}`);
+}
+
+function printRoster(){
+  const list = regsOf(A.cls).filter(r=>r.status!=='取消'); if (!list.length) return toast('沒有資料', true);
+  const rows = list.map((r,i)=>`<tr><td>${esc(r.seat||'')}</td><td>${esc(r.id)}</td><td class="n">${esc(r.name)}</td><td>${esc(r.gender)}</td><td>${esc(r.mobile||r.homeTel)}</td><td>${paidOf(r.id)?'✔':''}</td>${'<td></td>'.repeat(6)}</tr>`).join('');
+  printWin('點名單', `<h2>${esc(A.data.settings.orgName)}　${esc(clsName(A.cls))}　點名單</h2>
+    <table><thead><tr><th>座號</th><th>編號</th><th>姓名</th><th>性別</th><th>電話</th><th>繳費</th>${'<th>　/　</th>'.repeat(6)}</tr></thead><tbody>${rows}</tbody></table>
+    <p style="font-size:9pt">共 ${list.length} 人　列印日期：${new Date().toLocaleDateString('zh-TW')}</p>`,
+    `h2{font-size:14pt;text-align:center}table{width:100%;border-collapse:collapse;font-size:10.5pt}th,td{border:1px solid #000;padding:6px;text-align:center}td.n{font-weight:700;font-size:12pt}`);
+}
+
+/* ========== 班別管理 ========== */
+function tabClasses(){
+  const list = A.data.classes;
+  $('#tabBody').innerHTML = `
+  <div class="tools"><button class="btn main" id="newCls">＋ 新增班別</button>${list.length?`<button class="btn" id="copyCls">⧉ 複製最新一班，開下一期</button>`:''}</div>
+  <div class="card classlist">${list.length?list.map(c=>{
+    const n = A.data.regs.filter(r=>r.classCode===c.code&&r.status!=='取消').length;
+    return `<div class="item"><div class="info"><b>${esc(c.name)}</b>　<span class="pill st-${esc(c.status)}">${esc(c.status)}</span>
+      <div class="muted">代碼 ${esc(c.code)}　｜　開班 ${esc(c.start)}　｜　已報名 ${n} 人${c.quota?` / 名額 ${esc(c.quota)}`:''}</div></div>
+      <button class="btn sm" data-qr="${esc(c.code)}">QR Code</button><button class="btn sm" data-edit="${esc(c.code)}">編輯</button></div>`;
+  }).join(''):'<div class="empty">還沒有班別</div>'}</div>
+  <div class="card muted">💡 每一期開新班時，按「複製最新一班，開下一期」，系統會自動把「卅六」改成「卅七」、代碼 c36 改成 c37，只要再改日期就好。把舊的班別改成「截止報名」，報名頁就只會出現新的班。</div>`;
+  $('#newCls').onclick = () => openClass(null);
+  const cp = $('#copyCls'); if (cp) cp.onclick = () => openClass(nextClass(list[0]), true);
+  $$('[data-edit]').forEach(b => b.onclick = () => openClass(list.find(c=>c.code===b.dataset.edit)));
+  $$('[data-qr]').forEach(b => b.onclick = () => { A.qrCls = b.dataset.qr; A.tab='qr'; frame(); });
+}
+
+const CN = '〇一二三四五六七八九';
+function toCnNum(n){ // 36 → 卅六（配合海報寫法）、30 → 三十、21 → 廿一
+  const t = Math.floor(n/10), u = n%10;
+  if (n < 10) return CN[n];
+  if (u === 0) return t === 1 ? '十' : CN[t] + '十';
+  return (['','十','廿','卅'][t] || CN[t] + '十') + CN[u];
+}
+function fromCnNum(s){
+  const m = s.match(/([二三四五六七八九]十|[十廿卅])([一二三四五六七八九]?)/); if (!m) return null;
+  const t = m[1].length === 2 ? CN.indexOf(m[1][0]) : {'十':1,'廿':2,'卅':3}[m[1]];
+  return t*10 + (m[2] ? CN.indexOf(m[2]) : 0);
+}
+function nextClass(c){
+  const n = Object.assign({}, c);
+  const num = (c.code.match(/(\d+)$/)||[])[1];
+  const next = num ? +num + 1 : (fromCnNum(c.name)||0) + 1;
+  n.code = num ? c.code.replace(/\d+$/, next) : c.code + '-new';
+  const cur = fromCnNum(c.name);
+  n.name = cur ? c.name.replace(toCnNum(cur), toCnNum(cur+1)) : c.name.replace(/\d+/, d=>+d+1);
+  n.sort = String(next); n.status = '未開放'; n.intro = ''; n.start = ''; n.period = ''; delete n.createdAt;
+  return n;
+}
+
+function openClass(c, isCopy){
+  const isNew = !c || isCopy;
+  c = c || { code:'', name:'', status:'開放報名', place:'台北道場大安寺 第二講堂', address:'新北市樹林區大安路524號10樓', phone:A.data.settings.contactPhone+'　'+(A.data.settings.contactMobile||''), sort:'' };
+  const inp = (k,l,ph,cls) => `<div class="${cls||''}"><label class="f">${l}</label><input type="text" data-c="${k}" value="${esc(c[k])}" placeholder="${esc(ph||'')}" ${k==='code'&&!isNew?'disabled':''}></div>`;
+  $('#modalSlot').innerHTML = `
+  <div class="modal" id="mdl"><div class="box" style="max-width:720px">
+    <div class="mh"><h2 class="serif">${isNew?'新增班別':'編輯班別'}</h2><button class="x" data-close>×</button></div>
+    <div class="mb"><div class="grid g2" style="margin-top:14px">
+      ${inp('name','班別名稱 *','例：易經風水學初級卅七班','spanall')}
+      ${inp('code','班別代碼（網址用，英文數字）*','例：C37')}
+      <div><label class="f">報名狀態</label><select data-c="status">${CLASS_STATUS.map(s=>`<option ${c.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      ${inp('intro','開班說明','例：116年6月5日（星期五）晚上 7:00～8:30','spanall')}
+      ${inp('start','開班日期','例：116年6月12日（星期五）晚上 7:00～10:00','spanall')}
+      ${inp('period','開班期限','例：116年6月 至 118年2月，共 21 個月','spanall')}
+      ${inp('place','開班地點')}${inp('address','開班地址')}
+      ${inp('phone','報名專線')}${inp('quota','名額上限（空白＝不限）','')}
+      ${inp('sort','排序（數字大的排前面）','例：37')}
+      ${inp('note','內部備註')}
+    </div>
+    <p class="muted">報名網址會是：<span class="linkbox" style="display:inline;padding:2px 6px">${esc(regUrl(c.code||'代碼'))}</span></p></div>
+    <div class="mf">${!isNew?'<button class="btn danger" id="delCls" style="margin-right:auto">刪除班別</button>':''}<button class="btn" data-close>取消</button><button class="btn main" id="saveCls">儲存</button></div>
+  </div></div>`;
+  const m = $('#mdl'); m.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeModal);
+  $('#saveCls').onclick = async () => {
+    const o = Object.assign({}, c); m.querySelectorAll('[data-c]').forEach(el => o[el.dataset.c] = el.value.trim());
+    if (!o.name || !o.code) return toast('班別名稱和代碼一定要填', true);
+    const r = await api('saveClass',{cls:o,isNew}); if (r.ok) { toast('已儲存'); closeModal(); A.cls = o.code; SS.set('daansi_admin_cls', o.code); load(); } else toast(r.msg, true);
+  };
+  const d = $('#delCls'); if (d) d.onclick = async () => {
+    if (!confirm('確定刪除這個班別？')) return;
+    const r = await api('deleteClass',{code:c.code}); if (r.ok) { toast('已刪除'); closeModal(); load(); } else toast(r.msg, true);
+  };
+}
+
+/* ========== QR Code ========== */
+function regUrl(code){ return new URL('./?c=' + encodeURIComponent(code), location.href).href; }
+
+function drawQR(text, px){
+  const qr = qrcode(0, 'M'); qr.addData(text); qr.make();
+  const n = qr.getModuleCount(), q = 4, cell = Math.floor(px / (n + q*2)), size = cell * (n + q*2);
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0,0,size,size); g.fillStyle = '#000';
+  for (let r=0;r<n;r++) for (let k=0;k<n;k++) if (qr.isDark(r,k)) g.fillRect((k+q)*cell,(r+q)*cell,cell,cell);
+  return c;
+}
+
+function tabQR(){
+  if (!A.data.classes.length) { $('#tabBody').innerHTML = '<div class="card empty">請先新增班別</div>'; return; }
+  if (!A.data.classes.some(c=>c.code===A.qrCls)) A.qrCls = A.data.classes[0].code;
+  const c = A.data.classes.find(x=>x.code===A.qrCls), url = regUrl(c.code), s = A.data.settings;
+  const share = `🙏 ${s.orgName}\n${s.schoolName||'易經大學'}【${c.name}】開始報名囉！\n\n📌 開班說明：${c.intro||''}\n📌 開班日期：${c.start||''}\n📍 地點：${c.place||''}（${c.address||''}）\n\n👉 用手機點這裡就能報名：\n${url}\n\n有問題請打：${c.phone||s.contactPhone}`;
+  $('#tabBody').innerHTML = `
+  <div class="tools"><select id="qrSel" style="max-width:360px">${classOptions(A.qrCls)}</select>
+    ${c.status!=='開放報名'?`<span class="pill st-${esc(c.status)}">目前${esc(c.status)}，掃描後看得到資訊但無法報名</span>`:''}</div>
+  <div class="qrlayout">
+    <div class="qrbox"><div id="qrHolder"></div><div style="color:#000;font-weight:700;margin-top:6px">${esc(c.name)}</div></div>
+    <div class="card" style="margin:0">
+      <h2>報名網址</h2><div class="linkbox" id="url">${esc(url)}</div>
+      <div class="tools" style="margin-top:12px">
+        <button class="btn" id="cpUrl">複製網址</button>
+        <button class="btn" id="dlQR">⬇ 下載 QR Code 圖片</button>
+        <button class="btn main" id="poster">🖨 列印報名海報 (A4)</button>
+        <a class="btn" href="${esc(url)}" target="_blank">開啟報名頁 ↗</a>
+      </div>
+      <h2 style="margin-top:20px">LINE 群組分享文字</h2>
+      <textarea id="share" style="min-height:220px">${esc(share)}</textarea>
+      <button class="btn" id="cpShare" style="margin-top:10px">複製分享文字</button>
+    </div>
+  </div>`;
+  $('#qrSel').onchange = e => { A.qrCls = e.target.value; tabQR(); };
+  if (typeof qrcode === 'undefined') { $('#qrHolder').innerHTML = '<p style="color:#b3261e">QR Code 元件載入失敗，請檢查網路後重新整理</p>'; return; }
+  const cv = drawQR(url, 560); $('#qrHolder').appendChild(cv);
+  const copy = (t,msg) => navigator.clipboard.writeText(t).then(()=>toast(msg)).catch(()=>toast('請手動選取複製', true));
+  $('#cpUrl').onclick = () => copy(url, '網址已複製');
+  $('#cpShare').onclick = () => copy($('#share').value, '分享文字已複製，可以貼到 LINE 了');
+  $('#dlQR').onclick = () => { const a = document.createElement('a'); a.href = drawQR(url, 1200).toDataURL('image/png'); a.download = `${c.name}_報名QRCode.png`; a.click(); };
+  $('#poster').onclick = () => {
+    const img = drawQR(url, 1200).toDataURL('image/png');
+    const row = (k,v) => v ? `<tr><th>${k}</th><td>${esc(v)}</td></tr>` : '';
+    printWin('報名海報', `<div class="p">
+      <div class="o">${esc(s.orgName)}</div><div class="s">${esc(s.schoolName||'易經大學')}</div>
+      <h1>${esc(c.name)}</h1><div class="badge">歡迎報名</div>
+      <img src="${img}"><div class="scan">📱 用手機相機對準，就可以報名</div>
+      <table>${row('開班說明',c.intro)}${row('開班日期',c.start)}${row('上課期間',c.period)}${row('上課地點',c.place)}${row('地　　址',c.address)}${row('報名專線',c.phone)}</table>
+      <div class="u">${esc(url)}</div></div>`,
+      `.p{text-align:center;padding:6mm 10mm;border:3px double #8f2a1c;min-height:265mm;box-sizing:border-box}
+       .o{font-size:20pt;font-weight:700;letter-spacing:.15em;margin-top:6mm}.s{font-size:14pt;color:#8a6a20;letter-spacing:.5em;margin:2mm 0}
+       h1{font-size:30pt;color:#8f2a1c;margin:4mm 0;letter-spacing:.08em}.badge{display:inline-block;background:#8f2a1c;color:#fff;font-size:16pt;padding:2mm 8mm;border-radius:20mm;letter-spacing:.3em}
+       img{width:95mm;height:95mm;display:block;margin:8mm auto 2mm}.scan{font-size:17pt;font-weight:700;margin-bottom:6mm}
+       table{margin:0 auto;font-size:14pt;border-collapse:collapse;text-align:left}th{padding:2mm 6mm 2mm 0;color:#555;font-weight:500;white-space:nowrap;vertical-align:top}td{padding:2mm 0;font-weight:700}
+       .u{font-size:9pt;color:#777;margin-top:6mm;word-break:break-all}`);
+  };
+}
+
+/* ========== 設定 ========== */
+function tabSettings(){
+  const s = A.data.settings;
+  const inp = (k,l,ph) => `<div><label class="f">${l}</label><input type="text" data-s="${k}" value="${esc(s[k])}" placeholder="${esc(ph||'')}"></div>`;
+  $('#tabBody').innerHTML = `
+  <div class="card"><h2>報名頁顯示資訊</h2><div class="grid g2">
+    ${inp('orgName','寺名（頁首）')}${inp('schoolName','學校名稱')}
+    ${inp('contactPhone','洽詢電話（報名頁「打電話問」按鈕）')}${inp('contactMobile','洽詢手機')}
+    <div class="spanall">${inp('lineUrl','大安寺 LINE 專線連結（有填才會出現「用 LINE 詢問」按鈕）','例：https://line.me/ti/p/xxxxx')}</div>
+    <div class="spanall"><label class="f">個資說明（報名最後一步顯示）</label><textarea data-s="privacy">${esc(s.privacy)}</textarea></div>
+  </div><button class="btn main" id="saveSet" style="margin-top:14px">儲存設定</button></div>
+  <div class="card"><h2>變更後台密碼</h2><div class="grid g3">
+    <div><label class="f">目前密碼</label><input type="password" id="op"></div>
+    <div><label class="f">新密碼（至少 6 個字）</label><input type="password" id="np"></div>
+    <div><label class="f">再輸入一次新密碼</label><input type="password" id="np2"></div>
+  </div><button class="btn dark" id="chPw" style="margin-top:14px">變更密碼</button></div>`;
+  $('#saveSet').onclick = async () => {
+    const o = {}; $$('[data-s]').forEach(el => o[el.dataset.s] = el.value.trim());
+    const r = await api('saveSettings',{settings:o}); if (r.ok) { Object.assign(A.data.settings,o); toast('設定已儲存'); }
+  };
+  $('#chPw').onclick = async () => {
+    if ($('#np').value !== $('#np2').value) return toast('兩次新密碼不一樣', true);
+    const r = await api('changePassword',{oldPw:$('#op').value,newPw:$('#np').value});
+    if (r.ok) { toast('密碼已變更'); $$('#op,#np,#np2').forEach(i=>i.value=''); } else toast(r.msg, true);
+  };
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+load();
+})();
+</script>
+</body>
+</html>
