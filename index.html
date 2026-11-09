@@ -5,30 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>大安寺線上報名</title>
 <meta name="description" content="禪機山仙佛寺 台北道場大安寺 易經大學 線上報名">
-<meta name="theme-color" content="#8f2a1c">
+<meta name="theme-color" content="#fffcf7">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%238f2a1c'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='white'%3E易%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="alternate icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23800080'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='white'%3E易%3C/text%3E%3C/svg%3E">
 <script src="config.js"></script>
 <script src="api.js"></script>
 <style>
 :root{
-  --bg:#f4ebd6; --paper:#fffaf0; --ink:#2b2017; --muted:#6a5843; --line:#dccaa5;
-  --red:#8f2a1c; --red-d:#6f1f14; --red-soft:#f6e1d9; --gold:#a87a22; --gold-soft:#f3e3bd;
+  --bg:#f5f1ea; --paper:#fffcf7; --ink:#2b2017; --muted:#6a5843; --line:#dccaa5;
+  --red:#800080; --red-d:#560056; --red-soft:#f3e2f3; --gold:#a87a22; --gold-soft:#f3e3bd;
   --ok:#2e6a3a; --ok-soft:#e1efdf; --err:#b3261e; --err-soft:#fbe4e1;
   --fs:20px; --radius:14px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#1d1813; --paper:#28211a; --ink:#f3eadb; --muted:#c3b39a; --line:#4a3d2e;
-    --red:#c9503c; --red-d:#e0664f; --red-soft:#3d241d; --gold:#d6a94d; --gold-soft:#3a2f1c;
+    --red:#c57ac5; --red-d:#dc96dc; --red-soft:#3a2238; --gold:#d6a94d; --gold-soft:#3a2f1c;
     --ok:#7cc289; --ok-soft:#1f3322; --err:#ff8a7e; --err-soft:#3d1f1c;
   }
 }
 :root[data-theme="dark"]{
   --bg:#1d1813; --paper:#28211a; --ink:#f3eadb; --muted:#c3b39a; --line:#4a3d2e;
-  --red:#c9503c; --red-d:#e0664f; --red-soft:#3d241d; --gold:#d6a94d; --gold-soft:#3a2f1c;
+  --red:#c57ac5; --red-d:#dc96dc; --red-soft:#3a2238; --gold:#d6a94d; --gold-soft:#3a2f1c;
   --ok:#7cc289; --ok-soft:#1f3322; --err:#ff8a7e; --err-soft:#3d1f1c;
 }
 :root.big{ --fs:24px; }
@@ -40,14 +41,15 @@ button,input,select,textarea{font:inherit;color:inherit}
 .wrap{max-width:640px;margin:0 auto;padding:0 16px}
 
 /* 頁首 */
-.top{background:var(--red);color:#fff;padding:12px 0;position:sticky;top:0;z-index:20;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.top{background:var(--paper);color:var(--red);padding:10px 0;position:sticky;top:0;z-index:20;border-bottom:3px solid var(--red);box-shadow:0 2px 8px rgba(0,0,0,.06)}
 .top .wrap{display:flex;align-items:center;gap:12px}
-.seal{width:46px;height:46px;flex:none;border-radius:50%;background:#fff;display:grid;place-items:center}
+.seal{width:50px;height:50px;flex:none;display:grid;place-items:center}
+.seal img{width:48px;height:48px;display:block}
 .org{flex:1;line-height:1.3}
 .org b{display:block;font-size:1.15rem;letter-spacing:.08em}
-.org span{display:block;font-size:.72rem;opacity:.9}
+.org span{display:block;font-size:.72rem;color:var(--muted)}
 #schoolName{display:none}
-.sizebtn{flex:none;background:rgba(255,255,255,.16);border:2px solid rgba(255,255,255,.6);color:#fff;border-radius:10px;padding:6px 10px;font-size:.8rem;font-weight:700;cursor:pointer;min-height:44px}
+.sizebtn{flex:none;background:var(--paper);border:2px solid var(--red);color:var(--red);border-radius:10px;padding:6px 10px;font-size:.8rem;font-weight:700;cursor:pointer;min-height:44px}
 
 main{padding:20px 0 140px}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:0 1px 0 rgba(0,0,0,.03)}
@@ -56,9 +58,10 @@ h2{font-size:1.25rem;margin:0 0 14px;line-height:1.35}
 .sub{color:var(--muted);font-size:.9rem;margin:0}
 
 /* 課程資訊 */
-.hero{text-align:center;padding:26px 18px 22px;background:linear-gradient(180deg,var(--paper),var(--gold-soft));}
-.hero .school{color:var(--gold);font-weight:700;letter-spacing:.3em;font-size:.85rem}
-.hero h1{font-size:1.7rem;color:var(--red);margin:8px 0 6px}
+.hero{text-align:center;padding:26px 18px 22px;background:var(--paper)}
+.hero .school{color:var(--gold);font-weight:700;letter-spacing:.12em;font-size:.85rem}
+.hero .branch{display:block;font-size:.85em}
+.hero h1{font-size:1.5rem;color:var(--red);margin:8px 0 6px}
 .facts{margin:0;padding:0;list-style:none}
 .facts li{display:grid;grid-template-columns:5.2em 1fr;gap:10px;padding:12px 0;border-bottom:1px dashed var(--line)}
 .facts li:last-child{border-bottom:0}
@@ -158,10 +161,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);bo
 <div id="demoBanner" class="demo" hidden>展示模式：資料只存在這台裝置，尚未連接 Google 試算表</div>
 <header class="top">
   <div class="wrap">
-    <div class="seal" aria-hidden="true">
-      <svg width="36" height="36" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="#fff" stroke="#8f2a1c" stroke-width="4"/><path d="M50 2a48 48 0 0 1 0 96a24 24 0 0 1 0-48a24 24 0 0 0 0-48z" fill="#8f2a1c"/><circle cx="50" cy="26" r="7" fill="#8f2a1c"/><circle cx="50" cy="74" r="7" fill="#fff"/></svg>
-    </div>
-    <div class="org"><span id="orgTop">禪機山仙佛寺</span><b class="serif" id="orgName">台北道場大安寺</b><span id="schoolName">易經大學 線上報名</span></div>
+    <div class="seal"><img src="logo.png" alt="唯心聖教易經大學標誌" width="40" height="40"></div>
+    <div class="org"><span id="orgTop">禪機山唯心聖教仙佛寺</span><b class="serif" id="orgName">台北道場大安寺</b><span id="schoolName">易經大學 線上報名</span></div>
     <button class="sizebtn" id="sizeBtn" type="button" aria-label="調整字的大小">字放大</button>
   </div>
 </header>
@@ -211,8 +212,8 @@ async function init(){
     const r = await API.call('init', { classCode: code });
     if (!r.ok) throw new Error(r.msg);
     S.settings = r.settings || {}; S.classes = r.classes || [];
-    const on = (S.settings.orgName || '禪機山仙佛寺 台北道場大安寺').split(/\s+/);
-    $('#orgName').textContent = on.pop(); $('#orgTop').textContent = (on.join(' ') ? on.join(' ') + '・' : '') + (S.settings.schoolName || '易經大學') + '報名';
+    const on = (S.settings.orgName || '禪機山唯心聖教仙佛寺 台北道場大安寺').split(/\s+/);
+    $('#orgName').textContent = on.pop(); $('#orgTop').textContent = on.join(' ');
     if (r.cls) { S.cls = r.cls; S.screen = 'info'; }
     else if (S.classes.length === 1) { S.cls = S.classes[0]; S.screen = 'info'; }
     else S.screen = 'pick';
@@ -249,14 +250,20 @@ function viewPick(){
   return `<div class="card"><h2>請選擇要報名的班別</h2>${S.classes.map(c=>`<button class="classpick" data-pick="${esc(c.code)}"><b>${esc(c.name)}</b><span class="sub">開班日期：${esc(c.start)}</span></button>`).join('')}</div>`;
 }
 
+function orgParts(){
+  const on = (S.settings.orgName || '禪機山唯心聖教仙佛寺 台北道場大安寺').split(/\s+/);
+  const branch = on.length > 1 ? on.pop() : '';
+  return { head: on.join(''), branch };
+}
+
 function viewInfo(){
   const c = S.cls, open = c.status === '開放報名' && !c.full;
   const draft = LS.get(draftKey());
   const row = (k,v) => v ? `<li><span class="k">${k}</span><span class="v">${esc(v)}</span></li>` : '';
   return `
   <div class="card hero">
-    <div class="school">${esc(S.settings.schoolName||'易經大學')}</div>
-    <h1 class="serif">${esc(c.name)}</h1>
+    <div class="school">${esc(orgParts().head + (S.settings.schoolName||'易經大學'))}</div>
+    <h1 class="serif"><span class="branch">${esc(orgParts().branch)}</span>${esc(c.name)}</h1>
     <span class="tag ${open?'open':'closed'}">${open?'● 開放報名中':(c.full?'名額已滿':'目前未開放報名')}</span>
   </div>
   <div class="card">

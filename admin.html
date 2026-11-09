@@ -8,26 +8,27 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23463526'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='%23f3e3bd'%3E管%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="alternate icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%234a0f4a'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='%23f3e3bd'%3E管%3C/text%3E%3C/svg%3E">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="config.js"></script>
 <script src="api.js"></script>
 <style>
 :root{
-  --bg:#f3ede2; --paper:#fffdf8; --ink:#2b2017; --muted:#6f604d; --line:#e0d3bb; --head:#463526; --head-ink:#f6ead2;
-  --red:#8f2a1c; --red-soft:#f7e3dc; --gold:#a87a22; --gold-soft:#f5e7c6; --ok:#2e6a3a; --ok-soft:#e0efdf;
+  --bg:#f3ede2; --paper:#fffdf8; --ink:#2b2017; --muted:#6f604d; --line:#e0d3bb; --head:#4a0f4a; --head-ink:#f6ead2;
+  --red:#800080; --red-soft:#f3e2f3; --gold:#a87a22; --gold-soft:#f5e7c6; --ok:#2e6a3a; --ok-soft:#e0efdf;
   --err:#b3261e; --err-soft:#fbe4e1; --blue:#2c5d8a; --blue-soft:#e1ecf6; --row:#faf5ea;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#1b1713; --paper:#252019; --ink:#f1e8d8; --muted:#bcae96; --line:#43382b; --head:#120f0c; --head-ink:#f1e2c2;
-    --red:#d2604b; --red-soft:#3b231d; --gold:#d6a94d; --gold-soft:#372d1b; --ok:#7cc289; --ok-soft:#1f3322;
+    --red:#c57ac5; --red-soft:#3a2238; --gold:#d6a94d; --gold-soft:#372d1b; --ok:#7cc289; --ok-soft:#1f3322;
     --err:#ff8a7e; --err-soft:#3d1f1c; --blue:#8ab8e6; --blue-soft:#1d2a38; --row:#2b251d;
   }
 }
 :root[data-theme="dark"]{
   --bg:#1b1713; --paper:#252019; --ink:#f1e8d8; --muted:#bcae96; --line:#43382b; --head:#120f0c; --head-ink:#f1e2c2;
-  --red:#d2604b; --red-soft:#3b231d; --gold:#d6a94d; --gold-soft:#372d1b; --ok:#7cc289; --ok-soft:#1f3322;
+  --red:#c57ac5; --red-soft:#3a2238; --gold:#d6a94d; --gold-soft:#372d1b; --ok:#7cc289; --ok-soft:#1f3322;
   --err:#ff8a7e; --err-soft:#3d1f1c; --blue:#8ab8e6; --blue-soft:#1d2a38; --row:#2b251d;
 }
 *{box-sizing:border-box}
@@ -36,7 +37,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","
 button,input,select,textarea{font:inherit;color:inherit}
 .serif{font-family:"Noto Serif TC",serif}
 .wrap{max-width:1180px;margin:0 auto;padding:0 16px}
-header{background:var(--head);color:var(--head-ink)}
+header{background:var(--paper);color:var(--red);border-bottom:3px solid var(--red)}
 header .wrap{display:flex;align-items:center;gap:16px;min-height:62px;flex-wrap:wrap}
 header h1{font-size:1.15rem;margin:0;flex:1;letter-spacing:.05em}
 header h1 small{font-family:"Noto Sans TC";font-weight:400;opacity:.75;font-size:.8rem;margin-left:8px}
@@ -167,6 +168,7 @@ function toast(msg, err){
 function viewLogin(){
   $('#root').innerHTML = `
   <div class="login wrap"><div class="card">
+    <img src="logo.png" alt="" width="84" height="84" style="display:block;margin:0 auto 10px">
     <div class="serif" style="font-size:1.4rem;font-weight:900;color:var(--red)">大安寺報名後台</div>
     <div class="muted">易經大學 學員報名管理</div>
     <form id="lf"><input type="password" id="pw" placeholder="請輸入後台密碼" autocomplete="current-password" autofocus>
@@ -201,9 +203,10 @@ async function load(){
 function frame(){
   const tabs = [['regs','📋 報名名單'],['classes','🏫 班別管理'],['qr','🔳 報名 QR Code'],['settings','⚙️ 設定']];
   $('#root').innerHTML = `
-  <header><div class="wrap"><h1 class="serif">${esc(A.data.settings.orgName||'大安寺')}<small>報名後台</small></h1>
-    <a class="btn sm" href="./" target="_blank" style="background:transparent;color:var(--head-ink);border-color:rgba(255,255,255,.3)">看報名頁 ↗</a>
-    <button class="btn sm" id="outBtn" style="background:transparent;color:var(--head-ink);border-color:rgba(255,255,255,.3)">登出</button></div></header>
+  <header><div class="wrap"><img src="logo.png" alt="" width="40" height="40" >
+    <h1 class="serif">${esc(A.data.settings.orgName||'大安寺')}<small>報名後台</small></h1>
+    <a class="btn sm" href="./" target="_blank" style="background:var(--paper);color:var(--red);border-color:var(--red)">看報名頁 ↗</a>
+    <button class="btn sm" id="outBtn" style="background:var(--paper);color:var(--red);border-color:var(--red)">登出</button></div></header>
   <nav><div class="wrap">${tabs.map(t=>`<button data-tab="${t[0]}" class="${A.tab===t[0]?'on':''}">${t[1]}</button>`).join('')}</div></nav>
   <main><div class="wrap" id="tabBody"></div></main>`;
   $$('[data-tab]').forEach(b => b.onclick = () => { A.tab = b.dataset.tab; SS.set('daansi_admin_tab', A.tab); frame(); });
@@ -586,14 +589,14 @@ function tabQR(){
     const img = drawQR(url, 1200).toDataURL('image/png');
     const row = (k,v) => v ? `<tr><th>${k}</th><td>${esc(v)}</td></tr>` : '';
     printWin('報名海報', `<div class="p">
-      <div class="o">${esc(s.orgName)}</div><div class="s">${esc(s.schoolName||'易經大學')}</div>
+      <img class="lg" src="${new URL('logo.png', location.href).href}" alt=""><div class="o">${esc(s.orgName)}</div><div class="s">${esc(s.schoolName||'易經大學')}</div>
       <h1>${esc(c.name)}</h1><div class="badge">歡迎報名</div>
       <img src="${img}"><div class="scan">📱 用手機相機對準，就可以報名</div>
       <table>${row('開班說明',c.intro)}${row('開班日期',c.start)}${row('上課期間',c.period)}${row('上課地點',c.place)}${row('地　　址',c.address)}${row('報名專線',c.phone)}</table>
       <div class="u">${esc(url)}</div></div>`,
-      `.p{text-align:center;padding:6mm 10mm;border:3px double #8f2a1c;min-height:265mm;box-sizing:border-box}
-       .o{font-size:20pt;font-weight:700;letter-spacing:.15em;margin-top:6mm}.s{font-size:14pt;color:#8a6a20;letter-spacing:.5em;margin:2mm 0}
-       h1{font-size:30pt;color:#8f2a1c;margin:4mm 0;letter-spacing:.08em}.badge{display:inline-block;background:#8f2a1c;color:#fff;font-size:16pt;padding:2mm 8mm;border-radius:20mm;letter-spacing:.3em}
+      `.p{text-align:center;padding:6mm 10mm;border:3px double #800080;min-height:265mm;box-sizing:border-box}
+       .lg{width:24mm;height:24mm;margin:4mm auto 0;display:block}.o{font-size:20pt;font-weight:700;letter-spacing:.15em;margin-top:6mm}.s{font-size:14pt;color:#8a6a20;letter-spacing:.5em;margin:2mm 0}
+       h1{font-size:30pt;color:#800080;margin:4mm 0;letter-spacing:.08em}.badge{display:inline-block;background:#800080;color:#fff;font-size:16pt;padding:2mm 8mm;border-radius:20mm;letter-spacing:.3em}
        img{width:95mm;height:95mm;display:block;margin:8mm auto 2mm}.scan{font-size:17pt;font-weight:700;margin-bottom:6mm}
        table{margin:0 auto;font-size:14pt;border-collapse:collapse;text-align:left}th{padding:2mm 6mm 2mm 0;color:#555;font-weight:500;white-space:nowrap;vertical-align:top}td{padding:2mm 0;font-weight:700}
        .u{font-size:9pt;color:#777;margin-top:6mm;word-break:break-all}`);

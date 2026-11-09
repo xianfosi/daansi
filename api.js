@@ -31,7 +31,7 @@
       return {
         pw: 'daan1234',
         settings: {
-          orgName: '禪機山仙佛寺 台北道場大安寺', schoolName: '易經大學',
+          orgName: '禪機山唯心聖教仙佛寺 台北道場大安寺', schoolName: '易經大學',
           contactPhone: '02-2683-7265', contactMobile: '0918-851-597', lineUrl: '',
           privacy: '本表所填個人資料僅供大安寺易經大學學籍管理、上課聯繫使用，不會提供給其他單位。'
         },
