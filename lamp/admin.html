@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>大安寺點燈後台</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="config.js"></script>
+<script src="core.js"></script>
+<script src="api.js"></script>
+<style>
+:root{
+  --bg:#f5f1ea; --paper:#fffcf7; --ink:#2b2017; --muted:#6f604d; --line:#e0d3bb; --head:#4a0f4a;
+  --red:#800080; --red-soft:#f3e2f3; --gold:#a87a22; --gold-soft:#f5e7c6; --ok:#2e6a3a; --ok-soft:#e0efdf;
+  --err:#b3261e; --err-soft:#fbe4e1; --row:#faf5ea;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1713; --paper:#252019; --ink:#f1e8d8; --muted:#bcae96; --line:#43382b; --head:#120f0c;
+    --red:#c57ac5; --red-soft:#3a2238; --gold:#d6a94d; --gold-soft:#372d1b; --ok:#7cc289; --ok-soft:#1f3322; --err:#ff8a7e; --err-soft:#3d1f1c; --row:#2b251d;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1b1713; --paper:#252019; --ink:#f1e8d8; --muted:#bcae96; --line:#43382b; --head:#120f0c;
+  --red:#c57ac5; --red-soft:#3a2238; --gold:#d6a94d; --gold-soft:#372d1b; --ok:#7cc289; --ok-soft:#1f3322; --err:#ff8a7e; --err-soft:#3d1f1c; --row:#2b251d;
+}
+*{box-sizing:border-box}
+html{font-size:17px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;line-height:1.55}
+button,input,select,textarea{font:inherit;color:inherit}
+.serif{font-family:"Noto Serif TC",serif}
+.wrap{max-width:1200px;margin:0 auto;padding:0 16px}
+header{background:var(--paper);color:var(--red);border-bottom:3px solid var(--red)}
+header .wrap{display:flex;align-items:center;gap:12px;min-height:62px;flex-wrap:wrap}
+header img{width:40px;height:40px}
+header h1{font-size:1.15rem;margin:0;flex:1}
+header h1 small{font-family:"Noto Sans TC";font-weight:400;color:var(--muted);font-size:.8rem;margin-left:8px}
+nav{background:var(--paper);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10;overflow-x:auto}
+nav .wrap{display:flex;gap:4px}
+nav button{border:0;background:none;padding:14px 16px;font-weight:700;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+nav button.on{color:var(--red);border-bottom-color:var(--red)}
+main{padding:20px 0 60px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+h2{font-size:1.2rem;margin:0 0 12px}
+h3{font-size:1.02rem;margin:18px 0 10px;color:var(--red)}
+.btn{color:var(--ink);display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:8px 16px;border-radius:10px;border:1.5px solid var(--line);background:var(--paper);font-weight:700;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:var(--gold)}
+.btn.main{background:var(--red);border-color:var(--red);color:#fff}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.danger{color:var(--err);border-color:var(--err)}
+.btn.sm{min-height:34px;padding:4px 10px;font-size:.88rem}
+.btn:disabled{opacity:.5;cursor:default}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.tools .grow{flex:1;min-width:200px}
+input[type=text],input[type=password],input[type=number],input[type=date],select,textarea{min-height:40px;padding:7px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--paper);width:100%}
+textarea{min-height:70px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+label.f{display:block;font-size:.82rem;color:var(--muted);font-weight:500;margin-bottom:3px}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)} .g6{grid-template-columns:repeat(6,1fr)}
+@media (max-width:760px){.g3,.g4,.g6{grid-template-columns:1fr 1fr}}
+@media (max-width:480px){.g2,.g3,.g4,.g6{grid-template-columns:1fr}}
+.span2{grid-column:span 2} .spanall{grid-column:1/-1}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+.stat .n{font-size:1.7rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat .l{color:var(--muted);font-size:.85rem}
+.stat.warn .n{color:var(--err)}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
+table.list{width:100%;border-collapse:collapse;font-size:.94rem}
+table.list th{background:var(--gold-soft);text-align:left;padding:9px 12px;font-weight:700;white-space:nowrap}
+table.list td{padding:9px 12px;border-top:1px solid var(--line);white-space:nowrap}
+table.list td.wrapcell{white-space:normal;min-width:180px}
+table.list tbody tr.click{cursor:pointer}
+table.list tbody tr.click:hover{background:var(--row)}
+.num{font-variant-numeric:tabular-nums;text-align:right}
+.pill{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.8rem;font-weight:700}
+.p-待繳費{background:var(--err-soft);color:var(--err)}
+.p-已回報,.p-現場繳現金{background:var(--gold-soft);color:var(--ink)}
+.p-已核對{background:var(--ok-soft);color:var(--ok)}
+.p-取消{background:var(--line);color:var(--muted)}
+.mismatch{color:var(--err);font-weight:700}
+.empty{text-align:center;color:var(--muted);padding:36px}
+.muted{color:var(--muted);font-size:.88rem}
+.login{max-width:380px;margin:9vh auto;text-align:center}
+.login .card{padding:28px}
+.login input{font-size:1.1rem;min-height:52px;text-align:center;margin:14px 0}
+.login .btn{width:100%;min-height:52px}
+.modal{position:fixed;inset:0;background:rgba(20,8,20,.5);z-index:40;display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:24px 12px}
+.modal .box{background:var(--paper);border-radius:14px;width:100%;max-width:1000px}
+.modal .mh{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.modal .mh h2{margin:0;flex:1}
+.modal .mb{padding:4px 20px 20px}
+.modal .mf{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;padding:14px 20px;border-top:1px solid var(--line);position:sticky;bottom:-24px;background:var(--paper);border-radius:0 0 14px 14px}
+.x{border:0;background:none;font-size:1.6rem;cursor:pointer;color:var(--muted);padding:4px 8px}
+.item{border:1.5px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--row)}
+.item .hd{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.item .hd select{max-width:170px}
+.item .calc{font-size:.85rem;color:var(--muted);flex:1}
+.item .calc b{color:var(--red)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--head);color:#fff;padding:12px 22px;border-radius:10px;z-index:60;font-weight:700}
+.toast.err{background:var(--err)}
+.demo{background:var(--gold-soft);font-size:.85rem;text-align:center;padding:6px}
+.guagrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.guagrid label{display:grid;grid-template-columns:5.5em 1fr;align-items:center;gap:6px;font-size:.9rem}
+.guagrid label.on{color:var(--red);font-weight:700}
+.errlist{background:var(--err-soft);color:var(--err);border-radius:10px;padding:12px 16px;font-size:.9rem}
+.proof img{max-width:100%;max-height:70vh;border-radius:8px}
+</style>
+</head>
+<body>
+<div id="demoBanner" class="demo" hidden>展示模式（尚未連接 Google 試算表）— 密碼：daan1234</div>
+<div id="root"></div>
+<div id="modalSlot"></div>
+<div id="toastSlot"></div>
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const SS = { get(k){try{return localStorage.getItem(k);}catch(e){return null;}}, set(k,v){try{localStorage.setItem(k,v);}catch(e){}}, del(k){try{localStorage.removeItem(k);}catch(e){}} };
+const money = n => '$' + Number(n||0).toLocaleString();
+const PAYS = ['待繳費','已回報','現場繳現金','已核對'];
+if (API.isDemo) $('#demoBanner').hidden = false;
+
+const A = { token: SS.get('daansi_lamp_token'), tab: SS.get('daansi_lamp_tab') || 'orders', year: '', data: null, q:'', pay:'', lamp:'', listLamp:'' };
+
+async function api(action, payload){
+  try{
+    const r = await API.call(action, Object.assign({ token:A.token }, payload||{}));
+    if (r && r.auth === false) { logout(true); throw new Error(r.msg); }
+    return r;
+  }catch(e){ toast(e.message||'連線失敗', true); return { ok:false, msg:e.message }; }
+}
+function toast(m, err){ $('#toastSlot').innerHTML = `<div class="toast ${err?'err':''}">${esc(m)}</div>`; clearTimeout(toast.t); toast.t = setTimeout(()=>$('#toastSlot').innerHTML='', 2800); }
+
+/* ===== 登入 ===== */
+function viewLogin(){
+  $('#root').innerHTML = `<div class="login wrap"><div class="card">
+    <img src="../logo.png" alt="" width="84" height="84" style="display:block;margin:0 auto 10px">
+    <div class="serif" style="font-size:1.4rem;font-weight:900;color:var(--red)">植福點燈後台</div>
+    <form id="lf"><input type="password" id="pw" placeholder="請輸入後台密碼" autocomplete="current-password" autofocus><button class="btn main" type="submit">登入</button></form>
+    <div id="lmsg" style="color:var(--err);margin-top:10px;font-weight:700"></div></div></div>`;
+  $('#lf').onsubmit = async e => {
+    e.preventDefault();
+    const r = await API.call('login', { password:$('#pw').value }).catch(err => ({ok:false,msg:err.message}));
+    if (r.ok) { A.token = r.token; SS.set('daansi_lamp_token', r.token); load(); } else $('#lmsg').textContent = r.msg;
+  };
+}
+async function logout(silent){ if (!silent) await API.call('logout',{token:A.token}).catch(()=>{}); A.token = null; SS.del('daansi_lamp_token'); viewLogin(); }
+
+async function load(){
+  if (!A.token) return viewLogin();
+  if (!A.data) $('#root').innerHTML = '<div class="empty">資料載入中…</div>';
+  const r = await api('adminData', { year:A.year });
+  if (!r.ok) { if (A.token) $('#root').innerHTML = `<div class="empty">讀取失敗：${esc(r.msg)}</div>`; return; }
+  A.data = r; A.year = r.year; frame();
+}
+
+const S = () => A.data.settings;
+const lampName = c => (S().lamps.find(l=>l.code===c)||{}).name || c;
+const itemsOf = id => A.data.items.filter(it => it.orderId === id);
+const summary = id => { const c = {}; itemsOf(id).forEach(it => c[it.lamp] = (c[it.lamp]||0)+1); return Object.keys(c).map(k => lampName(k)+' '+c[k]).join('、'); };
+
+function frame(){
+  const tabs = [['orders','📋 點燈單'],['pay','💰 繳費核對'],['list','🏮 燈別名單'],['io','📥 匯入／匯出'],['settings','⚙️ 設定']];
+  const isCur = A.year === S().year;
+  $('#root').innerHTML = `
+  <header><div class="wrap"><img src="../logo.png" alt=""><h1 class="serif">${esc(S().title)}<small>點燈後台</small></h1>
+    <label class="muted">年度 <select id="yearSel" style="width:auto">${A.data.years.map(y=>`<option ${y===A.year?'selected':''}>${y}</option>`).join('')}</select></label>
+    <a class="btn sm" href="./" target="_blank">看登記頁 ↗</a><button class="btn sm" id="outBtn">登出</button></div></header>
+  <nav><div class="wrap">${tabs.map(t=>`<button data-tab="${t[0]}" class="${A.tab===t[0]?'on':''}">${t[1]}</button>`).join('')}</div></nav>
+  <main><div class="wrap">${isCur?'':`<div class="card" style="background:var(--gold-soft)">目前看的是 <b>${esc(A.year)} 年</b>的歷史資料（今年是 ${esc(S().year)} 年）。</div>`}<div id="tabBody"></div></div></main>`;
+  $('#yearSel').onchange = e => { A.year = e.target.value; load(); };
+  $('#outBtn').onclick = () => logout();
+  $$('[data-tab]').forEach(b => b.onclick = () => { A.tab = b.dataset.tab; SS.set('daansi_lamp_tab', A.tab); frame(); });
+  ({ orders:tabOrders, pay:tabPay, list:tabList, io:tabIO, settings:tabSettings })[A.tab]();
+}
+
+/* ===== 點燈單 ===== */
+function tabOrders(){
+  const live = A.data.orders.filter(o=>o.status!=='取消');
+  const due = live.reduce((s,o)=>s+Number(o.total||0),0), got = live.filter(o=>o.payStatus==='已核對').reduce((s,o)=>s+Number(o.total||0),0);
+  const toCheck = live.filter(o=>o.payStatus==='已回報'||o.payStatus==='現場繳現金').length;
+  const lampStats = A.year === S().year ? A.data.lamps.filter(l=>l.enabled).map(l=>[`${l.used}${l.left!=null?' / '+l.quota:''}`, l.name+(l.left!=null?'（剩 '+l.left+'）':'')]) : [];
+  $('#tabBody').innerHTML = `
+  <div class="stats">
+    ${lampStats.map(s=>`<div class="stat"><div class="n">${s[0]}</div><div class="l">${esc(s[1])}</div></div>`).join('')}
+    <div class="stat"><div class="n">${live.length}</div><div class="l">點燈單</div></div>
+    <div class="stat"><div class="n">${money(due)}</div><div class="l">應收</div></div>
+    <div class="stat"><div class="n">${money(got)}</div><div class="l">已核對收款</div></div>
+    <div class="stat ${toCheck?'warn':''}"><div class="n">${toCheck}</div><div class="l">待核對</div></div>
+  </div>
+  <div class="tools">
+    <input type="text" class="grow" id="q" placeholder="🔍 搜尋單號、姓名、電話、後五碼" value="${esc(A.q)}">
+    <select id="paySel" style="max-width:150px"><option value="">全部繳費狀態</option>${PAYS.map(p=>`<option ${A.pay===p?'selected':''}>${p}</option>`).join('')}<option ${A.pay==='取消'?'selected':''}>取消</option></select>
+    <select id="lampSel" style="max-width:160px"><option value="">全部燈種</option>${S().lamps.map(l=>`<option value="${l.code}" ${A.lamp===l.code?'selected':''}>${esc(l.name)}</option>`).join('')}</select>
+  </div>
+  <div class="tools">
+    <a class="btn main" id="staffBtn" href="./?staff=1" target="_blank">＋ 代客登記（電話／紙本）</a>
+    <button class="btn" id="reload">↻ 重新整理</button>
+  </div>
+  <div class="tbl-wrap"><table class="list"><thead><tr><th>單號</th><th>聯絡人</th><th>電話</th><th>點燈內容</th><th class="num">應繳</th><th>繳費</th><th>後五碼</th><th>登記時間</th><th>方式</th></tr></thead><tbody id="tb"></tbody></table></div>`;
+  $('#q').oninput = e => { A.q = e.target.value; drawOrders(); };
+  $('#paySel').onchange = e => { A.pay = e.target.value; drawOrders(); };
+  $('#lampSel').onchange = e => { A.lamp = e.target.value; drawOrders(); };
+  $('#reload').onclick = () => { load(); toast('已更新'); };
+  drawOrders();
+}
+function drawOrders(){
+  const q = A.q.trim().toLowerCase(), qd = q.replace(/\D/g,'');
+  const list = A.data.orders.filter(o => {
+    if (A.pay === '取消' ? o.status !== '取消' : (A.pay && (o.payStatus !== A.pay || o.status === '取消'))) return false;
+    if (A.lamp && !itemsOf(o.id).some(it=>it.lamp===A.lamp)) return false;
+    if (!q) return true;
+    return [o.id, o.contactName, o.payLast5].some(v => String(v||'').toLowerCase().includes(q)) || itemsOf(o.id).some(it => it.name.includes(q)) || (qd.length>=3 && String(o.phone).replace(/\D/g,'').includes(qd));
+  }).sort((a,b) => a.id < b.id ? 1 : -1);
+  $('#tb').innerHTML = list.length ? list.map(o => `<tr class="click" data-id="${esc(o.id)}"><td>${esc(o.id)}</td><td><b>${esc(o.contactName)}</b></td><td>${esc(o.phone)}</td>
+    <td class="wrapcell">${esc(summary(o.id))}</td><td class="num">${money(o.total)}</td>
+    <td><span class="pill p-${o.status==='取消'?'取消':esc(o.payStatus)}">${o.status==='取消'?'已取消':esc(o.payStatus)}</span></td><td>${esc(o.payLast5)}</td><td>${esc(o.createdAt)}</td><td class="muted">${esc(o.source)}</td></tr>`).join('')
+    : `<tr><td colspan="9" class="empty">沒有資料</td></tr>`;
+  $$('#tb tr[data-id]').forEach(tr => tr.onclick = () => openOrder(tr.dataset.id));
+}
+
+function itemCard(it, i){
+  const L = S().lamps, l = L.find(x=>x.code===it.lamp) || {};
+  const adv = LampCore.advise(it, S());
+  const f = (k, label, cls, w) => `<div class="${cls||''}"><label class="f">${label}</label><input type="text" data-it="${i}|${k}" value="${esc(it[k])}" ${w?`style="width:${w}"`:''}></div>`;
+  return `<div class="item" data-idx="${i}">
+    <div class="hd"><select data-it="${i}|lamp">${L.map(x=>`<option value="${x.code}" ${x.code===it.lamp?'selected':''}>${esc(x.name)}（${money(x.price)}）</option>`).join('')}</select>
+      <span class="calc">${adv.zodiac?'屬'+adv.zodiac:''}${adv.gua?'　命卦 '+adv.gua:''}${adv.reasons.length?'　<b>建議點太歲燈</b>':''}</span>
+      <button class="btn sm danger" data-rmit="${i}">刪除這盞</button></div>
+    <div class="grid g6">
+      ${f('name', l.unit==='戶'?'戶長姓名':'姓名')}
+      <div><label class="f">性別</label><select data-it="${i}|gender"><option></option>${['男','女'].map(g=>`<option ${it.gender===g?'selected':''}>${g}</option>`).join('')}</select></div>
+      ${f('birthY','農曆生年(民國)')}${f('birthM','月')}${f('birthD','日')}
+      <div><label class="f">閏月</label><select data-it="${i}|leap"><option value=""></option><option ${it.leap==='是'||it.leap===true?'selected':''}>是</option></select></div>
+      ${f('wish','祈求事項','span2')}
+      ${l.unit==='戶' ? f('male','男（丁）')+f('female','女（口）')+f('family','本戶眷屬姓名','span2') : ''}
+      ${it.lamp==='xiaozai' ? `<div><label class="f">燈取回</label><select data-it="${i}|takeBack">${['不取回','取回'].map(t=>`<option ${it.takeBack===t?'selected':''}>${t}</option>`).join('')}</select></div>` : ''}
+      ${f('address','地址（空白＝同聯絡地址）','span2')}${f('note','備註','span2')}
+    </div></div>`;
+}
+
+function openOrder(id){
+  const o = A.data.orders.find(x=>x.id===id); if (!o) return;
+  const items = itemsOf(id).map(it => Object.assign({}, it));
+  const draw = () => {
+    const inp = (k,l,cls) => `<div class="${cls||''}"><label class="f">${l}</label><input type="text" data-o="${k}" value="${esc(o[k])}"></div>`;
+    $('#modalSlot').innerHTML = `<div class="modal" id="mdl"><div class="box">
+      <div class="mh"><h2 class="serif">${esc(o.id)}　${esc(o.contactName)}</h2><button class="x" data-close>×</button></div>
+      <div class="mb">
+        <h3>聯絡資料</h3>
+        <div class="grid g4">${inp('contactName','聯絡人')}${inp('phone','電話')}${inp('zip','郵遞區號')}
+          <div><label class="f">單據狀態</label><select data-o="status">${['有效','取消'].map(s=>`<option ${o.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+          ${inp('address','地址','spanall')}</div>
+        ${o.userNote?`<p class="muted">信眾留言：${esc(o.userNote)}</p>`:''}
+        <h3>點燈明細（共 ${items.length} 盞）</h3>
+        <div id="itemsBox">${items.map(itemCard).join('')}</div>
+        <button class="btn sm" id="addIt">＋ 加一盞燈</button>
+        <h3>繳費</h3>
+        <div class="grid g6">
+          <div><label class="f">繳費狀態</label><select data-o="payStatus">${PAYS.map(p=>`<option ${o.payStatus===p?'selected':''}>${p}</option>`).join('')}</select></div>
+          ${inp('payMethod','方式')}${inp('payDate','轉帳日期')}${inp('payAmount','回報金額')}${inp('payLast5','帳號後五碼')}
+          <div><label class="f">截圖</label>${o.payProof?`<button class="btn sm" id="seeProof">看截圖</button>`:'<span class="muted">無</span>'}</div>
+        </div>
+        <p class="muted">應繳 <b>${money(o.total)}</b>${o.payAmount && Number(o.payAmount)!==Number(o.total)?` <span class="mismatch">（回報金額 ${money(o.payAmount)} 不一致）</span>`:''}　｜　回報：${esc(o.payReportedAt||'—')}　｜　核對：${esc(o.payCheckedAt||'—')}</p>
+        <h3>管理備註</h3><textarea data-o="adminNote">${esc(o.adminNote)}</textarea>
+        <p class="muted">登記：${esc(o.createdAt)}（${esc(o.source)}）　更新：${esc(o.updatedAt)}</p>
+      </div>
+      <div class="mf"><button class="btn danger" id="delO" style="margin-right:auto">刪除整張單</button><button class="btn" id="printO">🖨 列印</button>
+        ${o.payStatus!=='已核對'?'<button class="btn ok" id="okPay">✔ 款項核對無誤</button>':''}<button class="btn" data-close>取消</button><button class="btn main" id="saveO">儲存</button></div>
+    </div></div>`;
+    const m = $('#mdl');
+    m.querySelectorAll('[data-close]').forEach(b => b.onclick = close);
+    m.querySelectorAll('[data-o]').forEach(el => el.addEventListener('input', () => o[el.dataset.o] = el.value));
+    m.querySelectorAll('[data-o]').forEach(el => el.addEventListener('change', () => o[el.dataset.o] = el.value));
+    const syncItems = () => m.querySelectorAll('[data-it]').forEach(el => { const [i,k] = el.dataset.it.split('|'); items[+i][k] = el.value; });
+    m.querySelectorAll('[data-it]').forEach(el => el.addEventListener('change', () => { syncItems(); const [,k] = el.dataset.it.split('|'); if (['lamp','birthY','birthM','birthD','leap'].includes(k)) draw(); }));
+    m.querySelectorAll('[data-rmit]').forEach(b => b.onclick = () => { syncItems(); items.splice(+b.dataset.rmit,1); draw(); });
+    $('#addIt').onclick = () => { syncItems(); items.push({ lamp:(S().lamps[1]||S().lamps[0]).code, name:'', wish:'' }); draw(); };
+    const sp = $('#seeProof'); if (sp) sp.onclick = () => showProof(o.payProof);
+    const save = async extra => {
+      syncItems();
+      const fields = {}; ['status','contactName','phone','zip','address','payStatus','payMethod','payDate','payAmount','payLast5','adminNote'].forEach(k => fields[k] = o[k]);
+      Object.assign(fields, extra||{});
+      const r = await api('saveOrder', { id:o.id, fields, items:items.map(it => Object.assign({}, it, { leap: it.leap==='是' || it.leap===true })) });
+      if (r.ok) { toast('已儲存'); close(); load(); } else toast(r.msg, true);
+    };
+    $('#saveO').onclick = () => save();
+    const ok = $('#okPay'); if (ok) ok.onclick = () => save({ payStatus:'已核對' });
+    $('#delO').onclick = async () => { if (!confirm(`確定刪除 ${o.id} 整張點燈單？\n無法復原。只是不點了，建議把「單據狀態」改成「取消」。`)) return; const r = await api('deleteOrder',{id:o.id}); if (r.ok) { toast('已刪除'); close(); load(); } };
+    $('#printO').onclick = () => printOrders([o.id]);
+  };
+  draw();
+}
+function close(){ $('#modalSlot').innerHTML = ''; }
+async function showProof(fid){
+  $('#modalSlot').insertAdjacentHTML('beforeend', `<div class="modal" id="pm" style="z-index:45"><div class="box" style="max-width:640px"><div class="mh"><h2>轉帳截圖</h2><button class="x" id="pmx">×</button></div><div class="mb proof" id="pmb">載入中…</div></div></div>`);
+  $('#pmx').onclick = () => $('#pm').remove();
+  const r = await api('getFile', { fileId:fid });
+  const b = $('#pmb'); if (b) b.innerHTML = r.ok ? `<img src="${r.dataUrl}" alt="轉帳截圖">` : '讀取失敗';
+}
+
+/* ===== 繳費核對 ===== */
+function tabPay(){
+  const live = A.data.orders.filter(o=>o.status!=='取消');
+  const rep = live.filter(o=>o.payStatus==='已回報'||o.payStatus==='現場繳現金').sort((a,b)=>(a.payDate||a.payReportedAt) > (b.payDate||b.payReportedAt) ? 1 : -1);
+  const wait = live.filter(o=>o.payStatus==='待繳費').sort((a,b)=>a.createdAt > b.createdAt ? 1 : -1);
+  $('#tabBody').innerHTML = `
+  <div class="card"><h2>待核對（${rep.length}）</h2>
+    <p class="muted">對著網路銀行的入帳明細，比對「轉帳日期、金額、後五碼」，相符就勾起來，再按「標記已核對」。</p>
+    <div class="tools"><button class="btn ok" id="bulkOk" disabled>✔ 標記已核對</button><label class="muted"><input type="checkbox" id="allChk"> 全選</label></div>
+    <div class="tbl-wrap"><table class="list"><thead><tr><th></th><th>轉帳日期</th><th class="num">回報金額</th><th class="num">應繳</th><th>後五碼</th><th>方式</th><th>單號</th><th>聯絡人</th><th>電話</th><th>截圖</th><th>回報時間</th></tr></thead><tbody>
+    ${rep.length ? rep.map(o => { const mis = o.payAmount && Number(o.payAmount)!==Number(o.total); return `<tr>
+      <td><input type="checkbox" class="chk" value="${esc(o.id)}" style="width:22px;height:22px"></td><td>${esc(o.payDate)}</td>
+      <td class="num ${mis?'mismatch':''}">${o.payAmount?money(o.payAmount):''}</td><td class="num">${money(o.total)}</td>
+      <td><b style="font-size:1.1rem;letter-spacing:.1em">${esc(o.payLast5)}</b></td><td>${esc(o.payMethod)}</td>
+      <td><a href="#" data-open="${esc(o.id)}">${esc(o.id)}</a></td><td>${esc(o.contactName)}</td><td>${esc(o.phone)}</td>
+      <td>${o.payProof?`<button class="btn sm" data-proof="${esc(o.payProof)}">看</button>`:''}</td><td class="muted">${esc(o.payReportedAt)}</td></tr>`; }).join('')
+      : '<tr><td colspan="11" class="empty">目前沒有待核對的款項</td></tr>'}
+    </tbody></table></div></div>
+  <div class="card"><h2>還沒繳費（${wait.length}）</h2>
+    <p class="muted">可以打電話提醒；點單號可修改或取消。</p>
+    <div class="tbl-wrap"><table class="list"><thead><tr><th>單號</th><th>聯絡人</th><th>電話</th><th class="num">應繳</th><th>登記時間</th><th>內容</th></tr></thead><tbody>
+    ${wait.length ? wait.map(o => `<tr><td><a href="#" data-open="${esc(o.id)}">${esc(o.id)}</a></td><td>${esc(o.contactName)}</td><td><a href="tel:${esc(String(o.phone).replace(/\D/g,''))}">${esc(o.phone)}</a></td>
+      <td class="num">${money(o.total)}</td><td>${esc(o.createdAt)}</td><td class="wrapcell">${esc(summary(o.id))}</td></tr>`).join('') : '<tr><td colspan="6" class="empty">全部都繳了</td></tr>'}
+    </tbody></table></div></div>`;
+  const upd = () => { $('#bulkOk').disabled = !$$('.chk:checked').length; };
+  $$('.chk').forEach(c => c.onchange = upd);
+  $('#allChk').onchange = e => { $$('.chk').forEach(c => c.checked = e.target.checked); upd(); };
+  $('#bulkOk').onclick = async () => { const ids = $$('.chk:checked').map(c=>c.value); const r = await api('checkPay',{ids}); if (r.ok) { toast(`已核對 ${r.count} 筆`); load(); } };
+  $$('[data-open]').forEach(a => a.onclick = e => { e.preventDefault(); openOrder(a.dataset.open); });
+  $$('[data-proof]').forEach(b => b.onclick = () => showProof(b.dataset.proof));
+}
+
+/* ===== 燈別名單 ===== */
+function tabList(){
+  if (!A.listLamp) A.listLamp = (S().lamps[0]||{}).code;
+  const ok = {}; A.data.orders.forEach(o => { if (o.status!=='取消') ok[o.id] = o; });
+  const its = A.data.items.filter(it => it.lamp===A.listLamp && ok[it.orderId]).sort((a,b)=>a.id>b.id?1:-1);
+  const l = S().lamps.find(x=>x.code===A.listLamp) || {};
+  $('#tabBody').innerHTML = `
+  <div class="tools"><select id="ll" style="max-width:220px">${S().lamps.map(x=>`<option value="${x.code}" ${x.code===A.listLamp?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
+    <span class="muted">共 ${its.length} 盞</span><span class="grow"></span>
+    <button class="btn" id="printL">🖨 列印名單</button><button class="btn" id="xlsL">⬇ 匯出 Excel</button></div>
+  <div class="tbl-wrap"><table class="list" id="ltable"><thead><tr><th>序</th><th>姓名</th>${l.unit==='戶'?'<th>男</th><th>女</th><th>本戶眷屬</th>':'<th>性別</th><th>生肖</th><th>命卦</th>'}<th>祈求事項</th>${A.listLamp==='xiaozai'?'<th>取回</th>':''}<th>地址</th><th>單號</th><th>繳費</th></tr></thead><tbody>
+  ${its.map((it,i)=>{ const o = ok[it.orderId]; return `<tr><td>${i+1}</td><td><b>${esc(it.name)}</b></td>${l.unit==='戶'?`<td>${esc(it.male)}</td><td>${esc(it.female)}</td><td class="wrapcell">${esc(it.family)}</td>`:`<td>${esc(it.gender)}</td><td>${esc(it.zodiac)}</td><td>${esc(it.gua)}</td>`}
+    <td>${esc(it.wish)}</td>${A.listLamp==='xiaozai'?`<td>${esc(it.takeBack)}</td>`:''}<td class="wrapcell">${esc(it.address||o.address)}</td><td>${esc(it.orderId)}</td><td><span class="pill p-${esc(o.payStatus)}">${esc(o.payStatus)}</span></td></tr>`; }).join('') || '<tr><td colspan="10" class="empty">沒有資料</td></tr>'}
+  </tbody></table></div>`;
+  $('#ll').onchange = e => { A.listLamp = e.target.value; tabList(); };
+  $('#printL').onclick = () => printWin(`${S().title}　${l.name}名單`, `<h2>${esc(S().orgName)}　${esc(A.year)}年 ${esc(l.name)}名單（共 ${its.length} 盞）</h2>` + $('#ltable').outerHTML.replace(/<span class="pill[^>]*>|<\/span>/g,''));
+  $('#xlsL').onclick = () => exportXlsx(its.map(it=>it.orderId).filter((v,i,a)=>a.indexOf(v)===i), `${A.year}年_${l.name}名單.xlsx`, A.listLamp);
+}
+
+function printWin(title, body){
+  const w = window.open('', '_blank'); if (!w) return toast('請允許瀏覽器開新視窗', true);
+  w.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>${esc(title)}</title><style>@page{size:A4;margin:12mm}body{font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif;color:#000}
+    h2{font-size:14pt;text-align:center}table{width:100%;border-collapse:collapse;font-size:10.5pt}th,td{border:1px solid #000;padding:5px 6px;text-align:left}th{background:#eee}
+    .pg{page-break-after:always}.pg:last-child{page-break-after:auto}.tt{display:flex;justify-content:space-between;align-items:flex-end}</style></head><body>${body}<script>setTimeout(()=>print(),400)<\/script></body></html>`);
+  w.document.close();
+}
+function printOrders(ids){
+  const body = ids.map(id => { const o = A.data.orders.find(x=>x.id===id), its = itemsOf(id);
+    return `<div class="pg"><div class="tt"><h2 style="text-align:left;margin:0">${esc(S().orgName)}<br>${esc(S().title)}啟事</h2><div>單號：${esc(o.id)}<br>登記：${esc(o.createdAt.slice(0,10))}</div></div>
+    <p>聯絡人：<b>${esc(o.contactName)}</b>　電話：${esc(o.phone)}　地址：${esc(o.zip)} ${esc(o.address)}</p>
+    <table><thead><tr><th>燈種</th><th>姓名</th><th>農曆出生</th><th>祈求事項</th><th>附註</th><th>金額</th></tr></thead><tbody>
+    ${its.map(it=>`<tr><td>${esc(lampName(it.lamp))}</td><td><b>${esc(it.name)}</b> ${esc(it.gender)}</td><td>${it.birthY?`民國${esc(it.birthY)}年${it.leap==='是'?'閏':''}${esc(it.birthM)}月${esc(it.birthD)}日`:''}</td><td>${esc(it.wish)}</td>
+      <td>${it.male||it.female?`男${esc(it.male||0)}丁 女${esc(it.female||0)}口　${esc(it.family)}`:''}${it.takeBack?esc(it.takeBack):''}</td><td>${money(it.price)}</td></tr>`).join('')}
+    <tr><td colspan="5" style="text-align:right"><b>合計</b></td><td><b>${money(o.total)}</b></td></tr></tbody></table>
+    <p>繳費狀態：${esc(o.payStatus)}　${o.payLast5?'後五碼 '+esc(o.payLast5):''}</p></div>`; }).join('');
+  printWin('點燈單', body);
+}
+
+/* ===== 匯入／匯出 ===== */
+const HEAD = LampCore.IMPORT_HEAD;
+function rowsForExport(ids, onlyLamp){
+  const rows = [];
+  ids.forEach((id, n) => { const o = A.data.orders.find(x=>x.id===id); itemsOf(id).filter(it=>!onlyLamp||it.lamp===onlyLamp).forEach(it => rows.push([
+    o.year, o.id, o.contactName, o.phone, o.address, lampName(it.lamp), it.name, it.gender, it.birthY, it.birthM, it.birthD, it.leap, it.wish, it.male, it.female, it.family, it.takeBack, o.payStatus, it.note
+  ])); });
+  return rows;
+}
+function exportXlsx(ids, filename, onlyLamp){
+  if (typeof XLSX === 'undefined') return toast('Excel 元件載入失敗，請重新整理', true);
+  const ws = XLSX.utils.aoa_to_sheet([HEAD].concat(rowsForExport(ids, onlyLamp)));
+  ws['!cols'] = HEAD.map(h => ({ wch: Math.max(8, h.length*2) }));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '點燈名單'); XLSX.writeFile(wb, filename);
+}
+function tabIO(){
+  $('#tabBody').innerHTML = `
+  <div class="card"><h2>1. 下載空白範本</h2>
+    <p>過去的紙本點燈單，請師兄姐照這個 Excel 範本整理：<b>一盞燈一列</b>，同一張單（同一戶）填同一個「單號」。範本裡有填寫說明和範例。</p>
+    <a class="btn main" href="點燈名單範本.xlsx" download>⬇ 下載 Excel 範本</a></div>
+  <div class="card"><h2>2. 匯入整理好的 Excel</h2>
+    <p class="muted">匯入的資料會變成那一年的點燈紀錄，信眾明年登記時，輸入「聯絡人姓名＋電話」就能帶出來。匯入前系統會先檢查，有錯會列出第幾列。</p>
+    <input type="file" id="xf" accept=".xlsx,.xls,.csv" style="margin:8px 0">
+    <div id="imp"></div></div>
+  <div class="card"><h2>3. 匯出 ${esc(A.year)} 年全部資料</h2>
+    <p class="muted">格式和範本相同，可以直接存檔備份，也可以改好再匯入。</p>
+    <button class="btn" id="expAll">⬇ 匯出 Excel</button></div>`;
+  $('#expAll').onclick = () => exportXlsx(A.data.orders.filter(o=>o.status!=='取消').map(o=>o.id), `${A.year}年_點燈名單.xlsx`);
+  $('#xf').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    if (typeof XLSX === 'undefined') return toast('Excel 元件載入失敗，請重新整理', true);
+    const wb = XLSX.read(await f.arrayBuffer(), { type:'array' });
+    const ws = wb.Sheets['點燈名單'] || wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval:'', raw:false }).map(r => { const o = {}; Object.keys(r).forEach(k => o[String(k).trim()] = String(r[k]).trim()); return o; })
+      .filter(r => !String(r['年度']).startsWith('例'));
+    const box = $('#imp');
+    box.innerHTML = '檢查中…';
+    const r = await api('importRows', { rows, dryRun:true });
+    if (!r.ok) { box.innerHTML = `<div class="errlist"><b>${esc(r.msg)}</b><br>${(r.errors||[]).map(esc).join('<br>')}</div><p class="muted">請在 Excel 改好後重新選檔。</p>`; return; }
+    box.innerHTML = `<p>檢查通過：共 <b>${r.orders}</b> 張單、<b>${r.items}</b> 盞燈。</p><button class="btn main" id="doImp">確定匯入</button>`;
+    $('#doImp').onclick = async () => { const x = await api('importRows', { rows }); if (x.ok) { box.innerHTML = `<p>✔ 已匯入 ${x.orders} 張單。</p>`; toast('匯入完成'); load(); } else box.innerHTML = `<div class="errlist">${esc(x.msg)}</div>`; };
+  };
+}
+
+/* ===== 設定 ===== */
+function tabSettings(){
+  const s = JSON.parse(JSON.stringify(S()));
+  const reasons = Array.from(new Set(Object.values(s.guaRules||{}).filter(Boolean)));
+  const inp = (k,l,ph,cls,type) => `<div class="${cls||''}"><label class="f">${l}</label><input type="${type||'text'}" data-s="${k}" value="${esc(s[k])}" placeholder="${esc(ph||'')}"></div>`;
+  const TRI = LampCore.TRI, MONTH = ['1、9月','2、10月','3、11月','4、12月','5月','6月','7月','8月'];
+  $('#tabBody').innerHTML = `
+  <div class="card"><h2>年度與登記</h2><div class="grid g4">
+    ${inp('year','年度（民國）','116')}${inp('ganzhi','干支','丁未')}${inp('title','活動名稱','丁未年（116）植福點燈','span2')}
+    <div><label class="f">線上登記</label><select data-s="status">${['開放登記','截止'].map(x=>`<option ${s.status===x?'selected':''}>${x}</option>`).join('')}</select></div>
+    ${inp('regDeadline','登記截止日（過了自動關閉）','','','date')}${inp('payNote','繳費說明（顯示在完成頁）','','span2')}
+  </div><p class="muted">⚠ 換新年度時：改「年度、干支、活動名稱」，並到下方更新「生肖」與「命卦」規則。去年的資料會自動變成「去年紀錄」。</p></div>
+  <div class="card"><h2>匯款帳戶</h2><div class="grid g4">
+    ${inp('bankName','銀行名稱','例：台灣銀行')}${inp('bankCode','銀行代碼','例：004')}${inp('bankBranch','分行','例：樹林分行')}${inp('bankHolder','戶名')}
+    ${inp('bankAccount','帳號','','span2')}${inp('contactPhone','洽詢電話')}${inp('contactMobile','洽詢手機')}
+    ${inp('lineUrl','LINE 連結（可空白）','','span2')}${inp('orgName','寺名（頁首）','','span2')}
+    <div class="spanall"><label class="f">個資說明</label><textarea data-s="privacy">${esc(s.privacy)}</textarea></div></div></div>
+  <div class="card"><h2>燈種、價格、名額</h2>
+    <div class="tbl-wrap"><table class="list"><thead><tr><th>燈種名稱</th><th>金額</th><th>單位</th><th>名額（空白＝不限）</th><th>說明</th><th>開放</th></tr></thead><tbody id="lampRows">
+    ${s.lamps.map((l,i)=>`<tr><td><input type="text" data-l="${i}|name" value="${esc(l.name)}"></td><td><input type="number" data-l="${i}|price" value="${esc(l.price)}" style="width:100px"></td>
+      <td><select data-l="${i}|unit">${['戶','人'].map(u=>`<option ${l.unit===u?'selected':''}>${u}</option>`).join('')}</select></td>
+      <td><input type="number" data-l="${i}|quota" value="${esc(l.quota)}" style="width:110px"></td><td class="wrapcell"><input type="text" data-l="${i}|desc" value="${esc(l.desc)}"></td>
+      <td><input type="checkbox" data-l="${i}|enabled" ${l.enabled?'checked':''} style="width:22px;height:22px"></td></tr>`).join('')}
+    </tbody></table></div><button class="btn sm" id="addLamp" style="margin-top:10px">＋ 新增燈種</button></div>
+  <div class="card"><h2>祈求事項選項</h2><p class="muted">一行一個，會變成登記頁上可以點選的按鈕。</p><textarea id="wishes" style="min-height:140px">${esc((s.wishes||[]).join('\n'))}</textarea></div>
+  <div class="card"><h2>太歲規則：生肖（以農曆出生年）</h2><p class="muted">有填原因的生肖，登記頁會提示「建議點太歲燈」。</p>
+    <div class="grid g4">${LampCore.ZODIAC.map(z=>`<div><label class="f">屬${z}（${LampCore.branchOfZodiac(z)}）</label><input type="text" data-z="${z}" value="${esc((s.zodiacRules||{})[z]||'')}" placeholder="不需點燈"></div>`).join('')}</div></div>
+  <div class="card"><h2>太歲規則：命卦（以農曆生月、日）</h2>
+    <p class="muted">命卦算法：下卦看月份（1、9月乾…8月坤），上卦看日期除以 8 的餘數。選了原因的命卦會提示點燈。</p>
+    <div class="grid g2"><div><label class="f">原因選項（一行一個）</label><textarea id="reasons" style="min-height:130px">${esc(reasons.join('\n'))}</textarea><button class="btn sm" id="applyReasons" style="margin-top:6px">更新下拉選項</button></div>
+      <div><label class="f">閏月出生的人怎麼算</label><select data-s="leapRule">
+        <option value="same" ${s.leapRule==='same'?'selected':''}>閏月照本月算（例：閏四月＝四月）</option>
+        <option value="next" ${s.leapRule==='next'?'selected':''}>閏月算下個月</option>
+        <option value="split" ${s.leapRule==='split'?'selected':''}>閏月上半月算本月、下半月（16日起）算下個月</option></select>
+        <p class="muted">本宗門的閏月算法請向講師確認後設定。</p></div></div>
+    <div id="guaBox"></div></div>
+  <div class="card"><button class="btn main" id="saveSet" style="min-width:200px">儲存全部設定</button></div>
+  <div class="card"><h2>變更後台密碼</h2><div class="grid g3"><div><label class="f">目前密碼</label><input type="password" id="op"></div><div><label class="f">新密碼（至少 6 個字）</label><input type="password" id="np"></div><div><label class="f">再輸入一次</label><input type="password" id="np2"></div></div>
+    <button class="btn" id="chPw" style="margin-top:12px">變更密碼</button></div>`;
+  let opts = reasons.slice();
+  const drawGua = () => {
+    $('#guaBox').innerHTML = MONTH.map((mn, mi) => `<h3>農曆 ${mn}（下卦 ${TRI[mi]}・${LampCore.TRI_IMG[TRI[mi]]}）</h3><div class="guagrid">${TRI.map((up, ui) => {
+      const g = LampCore.GUA[up + TRI[mi]], v = (s.guaRules||{})[g] || '';
+      const days = [ui+1, ui+9, ui+17, ui+25].filter(d=>d<=30).join('、');
+      return `<label class="${v?'on':''}" title="日期：${days}"><span>${g}</span><select data-g="${g}"><option value="">不需點燈</option>${opts.concat(v && !opts.includes(v)?[v]:[]).map(o=>`<option ${o===v?'selected':''}>${esc(o)}</option>`).join('')}</select></label>`;
+    }).join('')}</div>`).join('');
+    $$('[data-g]').forEach(el => el.onchange = () => { s.guaRules[el.dataset.g] = el.value; if (!el.value) delete s.guaRules[el.dataset.g]; el.parentNode.classList.toggle('on', !!el.value); });
+  };
+  drawGua();
+  $('#applyReasons').onclick = () => { opts = $('#reasons').value.split('\n').map(x=>x.trim()).filter(Boolean); drawGua(); toast('下拉選項已更新'); };
+  $$('[data-s]').forEach(el => el.addEventListener('change', () => s[el.dataset.s] = el.value));
+  $$('[data-s]').forEach(el => el.addEventListener('input', () => s[el.dataset.s] = el.value));
+  $$('[data-z]').forEach(el => el.addEventListener('input', () => { if (el.value.trim()) s.zodiacRules[el.dataset.z] = el.value.trim(); else delete s.zodiacRules[el.dataset.z]; }));
+  const bindLamps = () => $$('[data-l]').forEach(el => el.onchange = () => { const [i,k] = el.dataset.l.split('|'); s.lamps[+i][k] = el.type==='checkbox' ? el.checked : (k==='price' ? Number(el.value) : el.value); });
+  bindLamps();
+  $('#addLamp').onclick = () => { s.lamps.push({ code:'lamp'+Date.now().toString(36), name:'新燈種', price:1000, unit:'人', quota:'', enabled:false, desc:'' }); S().lamps = s.lamps; tabSettingsKeep(s); };
+  $('#saveSet').onclick = async () => {
+    s.wishes = $('#wishes').value.split('\n').map(x=>x.trim()).filter(Boolean);
+    const r = await api('saveSettings', { settings:s });
+    if (r.ok) { toast('設定已儲存'); load(); }
+  };
+  $('#chPw').onclick = async () => {
+    if ($('#np').value !== $('#np2').value) return toast('兩次新密碼不一樣', true);
+    const r = await api('changePassword', { oldPw:$('#op').value, newPw:$('#np').value }); if (r.ok) toast('密碼已變更'); else toast(r.msg, true);
+  };
+}
+function tabSettingsKeep(s){ Object.assign(A.data.settings, s); tabSettings(); }
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+load();
+})();
+</script>
+</body>
+</html>
