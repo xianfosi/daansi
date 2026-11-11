@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="config.js"></script>
 <script src="core.js"></script>
 <script src="api.js"></script>
@@ -110,6 +111,11 @@ table.list tbody tr.click:hover{background:var(--row)}
 .guagrid label{display:grid;grid-template-columns:5.5em 1fr;align-items:center;gap:6px;font-size:.9rem}
 .guagrid label.on{color:var(--red);font-weight:700}
 .errlist{background:var(--err-soft);color:var(--err);border-radius:10px;padding:12px 16px;font-size:.9rem}
+.qrlayout{display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start}
+@media (max-width:760px){.qrlayout{grid-template-columns:1fr}}
+.qrbox{background:#fff;border-radius:12px;padding:16px;text-align:center;border:1px solid var(--line);color:#000}
+.qrbox canvas{width:100%;max-width:280px;height:auto;image-rendering:pixelated}
+.linkbox{font-family:ui-monospace,Menlo,monospace;background:var(--row);border:1px solid var(--line);border-radius:8px;padding:10px;word-break:break-all;font-size:.9rem}
 .proof img{max-width:100%;max-height:70vh;border-radius:8px}
 </style>
 </head>
@@ -168,7 +174,7 @@ const itemsOf = id => A.data.items.filter(it => it.orderId === id);
 const summary = id => { const c = {}; itemsOf(id).forEach(it => c[it.lamp] = (c[it.lamp]||0)+1); return Object.keys(c).map(k => lampName(k)+' '+c[k]).join('、'); };
 
 function frame(){
-  const tabs = [['orders','📋 點燈單'],['pay','💰 繳費核對'],['list','🏮 燈別名單'],['io','📥 匯入／匯出'],['settings','⚙️ 設定']];
+  const tabs = [['orders','📋 點燈單'],['pay','💰 繳費核對'],['list','🏮 燈別名單'],['qr','🔳 QR Code'],['io','📥 匯入／匯出'],['settings','⚙️ 設定']];
   const isCur = A.year === S().year;
   $('#root').innerHTML = `
   <header><div class="wrap"><img src="../logo.png" alt=""><h1 class="serif">${esc(S().title)}<small>點燈後台</small></h1>
@@ -179,7 +185,7 @@ function frame(){
   $('#yearSel').onchange = e => { A.year = e.target.value; load(); };
   $('#outBtn').onclick = () => logout();
   $$('[data-tab]').forEach(b => b.onclick = () => { A.tab = b.dataset.tab; SS.set('daansi_lamp_tab', A.tab); frame(); });
-  ({ orders:tabOrders, pay:tabPay, list:tabList, io:tabIO, settings:tabSettings })[A.tab]();
+  ({ orders:tabOrders, pay:tabPay, list:tabList, qr:tabQR, io:tabIO, settings:tabSettings })[A.tab]();
 }
 
 /* ===== 點燈單 ===== */
@@ -375,6 +381,56 @@ function printOrders(ids){
     <tr><td colspan="5" style="text-align:right"><b>合計</b></td><td><b>${money(o.total)}</b></td></tr></tbody></table>
     <p>繳費狀態：${esc(o.payStatus)}　${o.payLast5?'後五碼 '+esc(o.payLast5):''}</p></div>`; }).join('');
   printWin('點燈單', body);
+}
+
+
+/* ===== QR Code ===== */
+function regUrl(){ return new URL('./', location.href).href; }
+function drawQR(text, px){
+  const qr = qrcode(0, 'M'); qr.addData(text); qr.make();
+  const n = qr.getModuleCount(), q = 4, cell = Math.max(1, Math.floor(px / (n + q*2))), size = cell * (n + q*2);
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0,0,size,size); g.fillStyle = '#000';
+  for (let r=0;r<n;r++) for (let k=0;k<n;k++) if (qr.isDark(r,k)) g.fillRect((k+q)*cell,(r+q)*cell,cell,cell);
+  return c;
+}
+function rocDate(iso){ if(!iso) return ''; const [y,m,d] = iso.split('-').map(Number); return `${y-1911}年${m}月${d}日`; }
+function tabQR(){
+  const s = S(), url = regUrl(), lamps = s.lamps.filter(l=>l.enabled);
+  const share = `🙏 ${s.orgName}\n【${s.title}】開始登記囉！\n\n${lamps.map(l=>`🏮 ${l.name}　${money(l.price)}／${l.unit==='戶'?'一戶':'一人'}${l.quota?`（限量 ${l.quota} 盞）`:''}`).join('\n')}\n${s.regDeadline?`\n📅 登記截止：${rocDate(s.regDeadline)}\n`:''}\n👉 用手機點這裡就能登記：\n${url}\n\n輸入農曆生日，系統會幫您看今年要不要點太歲燈。\n去年點過燈的，輸入同一支電話就能帶出去年的資料。\n\n有問題請打：${s.contactPhone}${s.contactMobile?'　'+s.contactMobile:''}`;
+  $('#tabBody').innerHTML = `
+  ${s.status!=='開放登記'?'<div class="card" style="background:var(--err-soft)">目前「線上登記」是截止狀態，掃描後看得到資訊但不能登記。請到「設定」改成「開放登記」。</div>':''}
+  <div class="qrlayout">
+    <div class="qrbox"><div id="qrHolder"></div><b>${esc(s.title)}</b><div style="font-size:.9rem">手機掃描即可登記</div></div>
+    <div class="card" style="margin:0">
+      <h2>登記網址</h2><div class="linkbox">${esc(url)}</div>
+      <div class="tools" style="margin-top:12px">
+        <button class="btn" id="cpUrl">複製網址</button><button class="btn" id="dlQR">⬇ 下載 QR Code 圖片</button>
+        <button class="btn main" id="poster">🖨 列印 A4 海報</button><a class="btn" href="${esc(url)}" target="_blank">開啟登記頁 ↗</a>
+      </div>
+      <h2 style="margin-top:20px">LINE 群組分享文字</h2>
+      <textarea id="share" style="min-height:260px">${esc(share)}</textarea>
+      <button class="btn" id="cpShare" style="margin-top:10px">複製分享文字</button>
+    </div></div>`;
+  if (typeof qrcode === 'undefined') { $('#qrHolder').innerHTML = '<p style="color:#b3261e">QR Code 元件載入失敗，請重新整理</p>'; return; }
+  $('#qrHolder').appendChild(drawQR(url, 560));
+  const copy = (t,m) => navigator.clipboard.writeText(t).then(()=>toast(m)).catch(()=>toast('請手動選取複製', true));
+  $('#cpUrl').onclick = () => copy(url, '網址已複製');
+  $('#cpShare').onclick = () => copy($('#share').value, '分享文字已複製，可以貼到 LINE 了');
+  $('#dlQR').onclick = () => { const a = document.createElement('a'); a.href = drawQR(url, 1200).toDataURL('image/png'); a.download = `${s.title}_登記QRCode.png`; a.click(); };
+  $('#poster').onclick = () => {
+    const img = drawQR(url, 1200).toDataURL('image/png'), logo = new URL('../logo.png', location.href).href;
+    printWin('點燈海報', `<div class="p"><img class="lg" src="${logo}"><div class="o">${esc(s.orgName)}</div><h1>${esc(s.title)}</h1><div class="badge">線上登記</div>
+      <table>${lamps.map(l=>`<tr><th>${esc(l.name)}</th><td>${money(l.price)}／${l.unit==='戶'?'一戶':'一人'}${l.quota?`（限量 ${l.quota} 盞）`:''}</td></tr>`).join('')}</table>
+      <img class="qr" src="${img}"><div class="scan">📱 用手機相機對準，就可以登記</div>
+      ${s.regDeadline?`<div class="dl">登記截止：${rocDate(s.regDeadline)}</div>`:''}<div class="tel">洽詢：${esc(s.contactPhone)}${s.contactMobile?'　'+esc(s.contactMobile):''}</div><div class="u">${esc(url)}</div></div>`
+      + `<style>.p{text-align:center;padding:6mm 10mm;border:3px double #800080;min-height:265mm;box-sizing:border-box}.lg{width:24mm;height:24mm;margin:2mm auto 0;display:block}
+        .o{font-size:17pt;font-weight:700;letter-spacing:.1em;margin-top:3mm}h1{font-size:30pt;color:#800080;margin:4mm 0;letter-spacing:.06em}
+        .badge{display:inline-block;background:#800080;color:#fff;font-size:15pt;padding:2mm 8mm;border-radius:20mm;letter-spacing:.3em}
+        table{margin:6mm auto 0;width:auto;font-size:15pt;border:0}th,td{border:0;padding:1.5mm 4mm;background:none}th{font-weight:700;color:#800080}
+        .qr{width:85mm;height:85mm;display:block;margin:6mm auto 2mm}.scan{font-size:17pt;font-weight:700}.dl{font-size:15pt;margin-top:4mm}.tel{font-size:14pt;margin-top:2mm}
+        .u{font-size:9pt;color:#777;margin-top:4mm;word-break:break-all}</style>`);
+  };
 }
 
 /* ===== 匯入／匯出 ===== */
