@@ -34,6 +34,7 @@
 :root.big{--fs:24px}
 *{box-sizing:border-box}
 html{font-size:var(--fs);-webkit-text-size-adjust:100%}
+html,body{overflow-x:hidden}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;line-height:1.6;min-height:100vh}
 .serif{font-family:"Noto Serif TC","Noto Sans TC",serif}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -97,10 +98,14 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);bo
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:2px solid var(--line);background:var(--paper);border-radius:99px;padding:6px 16px;font-size:1rem;cursor:pointer;min-height:46px}
 .chip.on{background:var(--gold);border-color:var(--gold);color:#fff}
-.stepper{display:flex;align-items:center;gap:10px}
-.stepper button{width:56px;height:56px;border-radius:12px;border:2px solid var(--line);background:var(--paper);font-size:1.6rem;font-weight:700;cursor:pointer;color:var(--red)}
-.stepper output{min-width:2.2em;text-align:center;font-size:1.5rem;font-weight:700}
-.stepbox{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.stepper{display:grid;grid-template-columns:1fr minmax(1.6em,auto) 1fr;align-items:center;gap:8px;min-width:0}
+.stepper button{width:100%;min-width:44px;height:52px;border-radius:12px;border:2px solid var(--line);background:var(--paper);font-size:1.6rem;font-weight:700;cursor:pointer;color:var(--red)}
+.stepper output{min-width:1.6em;text-align:center;font-size:1.5rem;font-weight:700}
+.stepbox{display:grid;grid-template-columns:1fr;gap:10px}
+.steprow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;border:2px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--paper)}
+.steprow .stepper{flex:1 1 150px;max-width:220px;margin-left:auto}
+.steprow .k{white-space:nowrap}
+.steprow .k{font-weight:700;font-size:1.05rem}
 .skipnote{background:var(--gold-soft);border-radius:12px;padding:12px 14px;font-size:.95rem;margin-bottom:20px}
 .advice{border-radius:12px;padding:14px 16px;margin:4px 0 18px;font-weight:500}
 .advice.need{background:var(--red-soft);border:2px solid var(--red)}
@@ -112,7 +117,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);bo
 .lampopt.dis{opacity:.5;cursor:not-allowed}
 .lampopt b{font-size:1.15rem;display:block}
 .lampopt .p{font-weight:700;color:var(--red)}
-.person{border:2px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px;background:var(--paper)}
+.person{min-width:0;border:2px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px;background:var(--paper)}
 .person h3{margin:0;font-size:1.2rem;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .person .meta{color:var(--muted);font-size:.9rem}
 .person .tags{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
@@ -122,7 +127,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);bo
 .minibtns button{flex:1;min-height:46px;border-radius:10px;border:2px solid var(--line);background:var(--paper);font-weight:700;cursor:pointer}
 .minibtns .del{color:var(--err)}
 .bar{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);padding:12px 0 calc(12px + env(safe-area-inset-bottom));z-index:15;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
-.bar .wrap{display:grid;grid-template-columns:1fr 2fr;gap:12px}
+.bar .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:10px}
+.bar .btn{white-space:nowrap;padding-left:8px;padding-right:8px}
 .bar .btn{min-height:60px}
 .sumline{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}
 .sumline:last-child{border-bottom:0}
@@ -255,8 +261,11 @@ function birthInputs(at, o){
     <input type="text" inputmode="numeric" maxlength="2" ${at('birthD')} value="${esc(o.birthD)}" aria-label="日">日</div>
     <label class="check ${o.leap?'on':''}" style="margin-top:10px"><input type="checkbox" ${at('leap')} ${o.leap?'checked':''}>是閏月</label>`;
 }
+const wishList = v => String(v||'').split(/[、,，]/).map(x=>x.trim()).filter(Boolean);
+function toggleWish(v, w){ const l = wishList(v); const i = l.indexOf(w); if (i>=0) l.splice(i,1); else l.push(w); return l.join('、'); }
 function wishChips(attr, val){
-  return `<div class="chips">${(S.settings.wishes||[]).map(w=>`<button type="button" class="chip ${val===w?'on':''}" ${attr}="${esc(w)}">${esc(w)}</button>`).join('')}</div>`;
+  const on = wishList(val);
+  return `<div class="chips">${(S.settings.wishes||[]).map(w=>`<button type="button" class="chip ${on.includes(w)?'on':''}" ${attr} data-w="${esc(w)}" aria-pressed="${on.includes(w)}">${on.includes(w)?'✔ ':''}${esc(w)}</button>`).join('')}</div>`;
 }
 function inp(k, label, o){
   o = o || {};
@@ -293,13 +302,13 @@ function viewForm(){
           <div class="field"><span class="lbl">戶長農曆生日<span class="opt">（可不填）</span></span>${birthInputs(f => `data-h="${i}|${f}"`, h)}</div>
           <div class="field"><span class="lbl">全戶人數</span>
             <div class="stepbox">
-              <div><div class="hint" style="margin:0 0 6px">男（丁）</div><div class="stepper"><button type="button" data-cnt="${i}|male|-1">－</button><output>${h.male}</output><button type="button" data-cnt="${i}|male|1">＋</button></div></div>
-              <div><div class="hint" style="margin:0 0 6px">女（口）</div><div class="stepper"><button type="button" data-cnt="${i}|female|-1">－</button><output>${h.female}</output><button type="button" data-cnt="${i}|female|1">＋</button></div></div>
+              <div class="steprow"><span class="k">男（丁）</span><div class="stepper"><button type="button" data-cnt="${i}|male|-1" aria-label="男減一">－</button><output>${h.male}</output><button type="button" data-cnt="${i}|male|1" aria-label="男加一">＋</button></div></div>
+              <div class="steprow"><span class="k">女（口）</span><div class="stepper"><button type="button" data-cnt="${i}|female|-1" aria-label="女減一">－</button><output>${h.female}</output><button type="button" data-cnt="${i}|female|1" aria-label="女加一">＋</button></div></div>
             </div></div>
           <div class="field"><span class="lbl">家人姓名<span class="opt">（戶長以外，可不填）</span></span>
             ${h.family.map((f,j)=>`<input type="text" data-fam="${i}|${j}" value="${esc(f)}" placeholder="家人 ${j+1} 的姓名" style="margin-bottom:8px">`).join('')}
             <button type="button" class="btn btn-ghost" data-addfam="${i}" style="min-height:50px">＋ 再加一位家人</button></div>
-          <div class="field" style="margin-bottom:0"><span class="lbl">祈求事項<span class="opt">（點一下選）</span></span>${wishChips(`data-hhwish="${i}"`, h.wish)}</div>
+          <div class="field" style="margin-bottom:0"><span class="lbl">祈求事項<span class="opt">（可以選好幾個，再點一下取消）</span></span>${wishChips(`data-hhwish="${i}"`, h.wish)}</div>
         </div>`).join('') + `<button type="button" class="btn btn-line" data-go="addHH">＋ 再點一戶（例如已分家的子女）</button>` : ''}`;
   }
   else if (n === 3) {
@@ -338,7 +347,7 @@ function viewEditP(){
       <div class="errmsg">請至少選一盞燈</div></div>
     ${p.lamps.xiaozai ? `<div class="field"><span class="lbl">消災祈福燈，法會後要把燈帶回家嗎？</span>
       <div class="choices">${['取回','不取回'].map(t=>`<button type="button" class="choice ${p.takeBack===t?'on':''}" data-tb="${t}">${t}</button>`).join('')}</div></div>` : ''}
-    <div class="field"><span class="lbl">祈求事項<span class="opt">（點一下選）</span></span>${wishChips('data-pw', p.wish)}</div>
+    <div class="field"><span class="lbl">祈求事項<span class="opt">（可以選好幾個，再點一下取消）</span></span>${wishChips('data-pw', p.wish)}</div>
   </div>`;
 }
 function adviceHtml(p, adv, hasBirth){
@@ -443,6 +452,7 @@ function viewError(){ return `<div class="card"><h2>網路好像不太順</h2><p
 
 /* ===== 事件 ===== */
 function bind(){
+  bindWish();
   $$('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
   $$('[data-edit]').forEach(b => b.onclick = () => { S.step = +b.dataset.edit; S.screen = 'form'; render(); });
   $$('[data-k]').forEach(el => el.addEventListener(el.type==='checkbox'?'change':'input', () => {
@@ -465,7 +475,6 @@ function bind(){
   $$('[data-cnt]').forEach(b => b.onclick = () => { const [i,f,dv] = b.dataset.cnt.split('|'); const h = S.d.households[+i]; h[f] = Math.max(0, Math.min(30, (+h[f]||0) + (+dv))); b.parentNode.querySelector('output').textContent = h[f]; saveDraft(); });
   $$('[data-fam]').forEach(el => el.addEventListener('input', () => { const [i,j] = el.dataset.fam.split('|'); S.d.households[+i].family[+j] = el.value; saveDraft(); }));
   $$('[data-addfam]').forEach(b => b.onclick = () => { S.d.households[+b.dataset.addfam].family.push(''); saveDraft(); render(); });
-  $$('[data-hhwish]').forEach(b => b.onclick = () => { const h = S.d.households[+b.dataset.hhwish]; h.wish = h.wish === b.textContent ? '' : b.textContent; saveDraft(); b.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on', c.textContent===h.wish)); });
   $$('[data-hhlamp]').forEach(b => b.onclick = () => { const [i,c] = b.dataset.hhlamp.split('|'); S.d.households[+i].lamp = c; saveDraft(); render(); });
   $$('[data-rmhh]').forEach(b => b.onclick = () => { if (confirm('確定刪除這一戶？')) { S.d.households.splice(+b.dataset.rmhh,1); if (!S.d.households.length) S.d.wantHH = false; saveDraft(); render(); } });
   $$('[data-editp]').forEach(b => b.onclick = () => { S.editIdx = +b.dataset.editp; S.edit = JSON.parse(JSON.stringify(S.d.people[S.editIdx])); S.edit._auto = false; S.screen = 'editP'; render(); });
@@ -481,7 +490,6 @@ function bind(){
   $$('[data-pg]').forEach(b => b.onclick = () => { S.edit.gender = b.dataset.pg; $$('[data-pg]').forEach(x=>x.classList.toggle('on', x===b)); });
   $$('[data-pl]').forEach(el => el.onchange = () => { S.edit.lamps[el.dataset.pl] = el.checked; S.edit._auto = false; const y = window.scrollY; render(); window.scrollTo(0,y); });
   $$('[data-tb]').forEach(b => b.onclick = () => { S.edit.takeBack = b.dataset.tb; $$('[data-tb]').forEach(x=>x.classList.toggle('on', x===b)); });
-  $$('[data-pw]').forEach(b => b.onclick = () => { S.edit.wish = S.edit.wish === b.textContent ? '' : b.textContent; $$('[data-pw]').forEach(c=>c.classList.toggle('on', c.textContent===S.edit.wish)); });
   // 查詢、回報
   $$('[data-q]').forEach(el => el.addEventListener('input', () => S.q[el.dataset.q] = el.value));
   $$('[data-rep]').forEach(b => b.onclick = () => { const o = S.qres.find(x=>x.id===b.dataset.rep); startReport(o.id, S.q.phone, o.total); });
@@ -489,6 +497,11 @@ function bind(){
   $$('[data-r]').forEach(el => el.addEventListener('input', () => { let v = el.value; if (el.dataset.r==='last5') { v = digits(v).slice(0,5); el.value = v; } S.report[el.dataset.r] = v; const w = el.closest('.field'); w && w.classList.remove('bad'); }));
   const pi = $('#proofIn'); if (pi) pi.onchange = () => pi.files[0] && loadImg(pi.files[0], d => { S.report.proof = d; render(); });
   $$('[data-copy]').forEach(b => b.onclick = () => navigator.clipboard.writeText(b.dataset.copy).then(()=>{ b.textContent = '✔ 已複製帳號'; }).catch(()=>{}));
+}
+
+function bindWish(){
+  $$('[data-hhwish]').forEach(b => b.onclick = () => { const i = +b.dataset.hhwish, h = S.d.households[i]; h.wish = toggleWish(h.wish, b.getAttribute('data-w')); saveDraft(); b.parentNode.outerHTML = wishChips(`data-hhwish="${i}"`, h.wish); bindWish(); });
+  $$('[data-pw]').forEach(b => b.onclick = () => { S.edit.wish = toggleWish(S.edit.wish, b.getAttribute('data-w')); b.parentNode.outerHTML = wishChips('data-pw', S.edit.wish); bindWish(); });
 }
 
 function refreshAdvice(){
