@@ -322,6 +322,21 @@ function viewForm(){
           <div class="field" style="margin-bottom:0"><span class="lbl">祈求事項<span class="opt">（可以選好幾個，再點一下取消）</span></span>${wishChips(`data-hhwish="${i}"`, h.wish)}</div>
         </div>`).join('') + `<button type="button" class="btn btn-line" data-go="addHH">＋ 再點一戶（例如已分家的子女）</button>` : ''}`;
   }
+  else if (key === 'people' && simpleMode()) {
+    ensureSelf();
+    body = `<p style="margin-top:0">在燈的前面<b>打勾</b>就可以${pLamps().length>1?'，兩種都要就兩個都勾':''}。</p>
+      ${d.people.map((p,i)=>`<div class="person" ${i===0?'style="border-color:var(--red)"':''}>
+        <h3><span>${i===0?'報名人':'家人 '+i}</span>${i>0?`<button type="button" class="chip" data-rmsp="${i}" style="color:var(--err)">✕ 刪除</button>`:''}</h3>
+        <div style="height:10px"></div>
+        ${pLamps().map((l,j)=>{ const full = l.left===0 && !p.lamps[l.code]; return `<label class="lampopt ${p.lamps[l.code]?'on':''} ${full?'dis':''}">
+          <input type="checkbox" data-spl="${i}|${l.code}" ${p.lamps[l.code]?'checked':''} ${full?'disabled':''}>
+          <span><span class="hint" style="margin:0">燈${'一二三四五六'[j]||j+1}</span><b>${esc(l.name)}</b>${l.desc?`<span class="hint" style="margin:0">${esc(l.desc)}</span>`:''}${l.left!=null?`<span class="left ${l.left===0?'zero':''}">${l.left===0?'已額滿':'剩 '+l.left+' 盞'}</span>`:''}</span>
+          <span class="p">${Number(l.price)>0?money(l.price):''}</span></label>`; }).join('')}
+        <div class="field" style="margin:14px 0 0" id="w_sp${i}"><label class="lbl">點燈人姓名<span class="opt">（${i===0?'已帶入報名人，可修改':'必填'}）</span></label>
+          <input type="text" data-sp="${i}" value="${esc(p.name)}" placeholder="姓名"><div class="errmsg">請填姓名</div></div>
+      </div>`).join('')}
+      <button type="button" class="btn btn-ghost" data-go="addSimple">＋ 幫家人也點燈</button>`;
+  }
   else if (key === 'people') {
     body = `<p style="margin-top:0">${pLamps().map(l=>esc(l.name)).join('、')}是<b>一人一盞</b>。請把要點燈的人一位一位加進來${pLamps().length>1?'，同一個人可以點好幾種燈':''}。</p>
       ${d.people.length ? d.people.map((p,i)=>{
@@ -336,7 +351,7 @@ function viewForm(){
   return `<div class="card">
     <div class="stepinfo">第 ${n+1} 步，共 ${ST.length+1} 步</div>
     <div class="progress">${ST.concat(['confirm']).map((s,i)=>`<i class="${i<=n?'on':''}"></i>`).join('')}</div>
-    <h2 class="serif">${{ contact:'聯絡人資料', address:'住址', hh:(hhLamps()[0]||{}).name+'（一戶一盞）', people:pLamps().map(l=>l.name).join('・')+'（一人一盞）' }[key]}</h2>
+    <h2 class="serif">${{ contact:'聯絡人資料', address:'住址', hh:(hhLamps()[0]||{}).name+'（一戶一盞）', people: simpleMode() ? '選擇要點的燈' : pLamps().map(l=>l.name).join('・')+'（一人一盞）' }[key]}</h2>
     ${body}</div>`;
 }
 
@@ -463,7 +478,16 @@ function viewReport(){
 function viewError(){ return `<div class="card"><h2>網路好像不太順</h2><p>請稍等一下再試一次，或直接打電話登記。</p><p class="hint">${esc(S.err)}</p><button class="btn btn-main" onclick="location.reload()">再試一次</button><div style="margin-top:12px">${contactBtns()}</div></div>`; }
 
 /* ===== 事件 ===== */
+function simpleMode(){ return S.settings.askBirth === false; }
+function ensureSelf(){
+  const d = S.d;
+  if (!d.people.length) d.people.push(Object.assign(blankP(), { name:d.contactName, _self:true }));
+  else if (d.people[0]._self && !d.people[0].name) d.people[0].name = d.contactName;
+}
 function bind(){
+  $$('[data-sp]').forEach(el => el.addEventListener('input', () => { S.d.people[+el.dataset.sp].name = el.value; const w = el.closest('.field'); w && w.classList.remove('bad'); saveDraft(); }));
+  $$('[data-spl]').forEach(el => el.onchange = () => { const [i,c] = el.dataset.spl.split('|'); S.d.people[+i].lamps[c] = el.checked; el.closest('.lampopt').classList.toggle('on', el.checked); saveDraft(); });
+  $$('[data-rmsp]').forEach(b => b.onclick = () => { S.d.people.splice(+b.dataset.rmsp,1); saveDraft(); const y = window.scrollY; render(); window.scrollTo(0,y); });
   bindWish();
   $$('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
   $$('[data-edit]').forEach(b => b.onclick = () => { S.step = stepIdx(b.dataset.edit); S.screen = 'form'; render(); });
@@ -546,14 +570,22 @@ async function go(a){
       if (d.wantHH) { const i = d.households.findIndex(h=>!h.name.trim()); if (i >= 0) return bad('w_hh'+i); }
     }
     if (S.step === steps().length - 1) {
+      if (simpleMode()) {
+        d.people = d.people.filter((p,i) => i === 0 || p.name.trim() || pLamps().some(l=>p.lamps[l.code]));
+        const noName = d.people.findIndex(p => pLamps().some(l=>p.lamps[l.code]) && !p.name.trim());
+        if (noName >= 0) return bad('w_sp'+noName);
+        d.people = d.people.filter(p => pLamps().some(l=>p.lamps[l.code]));
+        if (!d.people.length) { ensureSelf(); render(); alertBox('請勾選要點的燈（燈一或燈二，也可以兩種都點）。'); return; }
+      }
       const nolamp = d.people.filter(p => !pLamps().some(l=>p.lamps[l.code]));
       if (nolamp.length) { alertBox(`「${nolamp.map(p=>p.name).join('、')}」還沒有選燈，請按「修改」選燈，或「刪除」這位。`); return; }
-      if (!lines().length) { alertBox('還沒有選任何燈喔！請加入要點燈的人，或回上一步點光明燈。'); return; }
+      if (!lines().length) { alertBox(hhLamps().length ? `還沒有選任何燈喔！請加入要點燈的人，或回上一步點${hhLamps()[0].name}。` : '還沒有選任何燈喔！請加入要點燈的人。'); return; }
       S.screen = 'confirm'; saveDraft(); render(); return;
     }
     S.step++; saveDraft(); render();
   }
   else if (a === 'addHH') { S.d.households.push(blankHH()); saveDraft(); render(); }
+  else if (a === 'addSimple') { S.d.people.push(blankP()); saveDraft(); render(); setTimeout(() => { const ins = $$('[data-sp]'); const last = ins[ins.length-1]; last && last.scrollIntoView({block:'center'}); last && last.focus(); }, 50); }
   else if (a === 'addP') { S.edit = blankP(); S.editIdx = -1; S.screen = 'editP'; render(); }
   else if (a === 'cancelP') { S.screen = 'form'; render(); }
   else if (a === 'saveP') {
