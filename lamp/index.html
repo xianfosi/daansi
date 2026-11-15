@@ -610,6 +610,19 @@ async function askPrev(){
   overlay('');
   if (!r.ok) return false;
   let warn = r.thisYear && r.thisYear.length ? `<p class="hint" style="text-align:left">提醒：這支電話今年已經登記過 ${r.thisYear.map(o=>o.id+'（'+o.summary+'）').join('、')}。如果是另一戶要點燈，可以繼續。</p>` : '';
+  if (!r.found && r.candidates && r.candidates.length) {
+    overlay(`<p style="margin:0 0 8px">找到 ${esc(r.candidates[0].year)} 年「${esc(S.d.contactName)}」的點燈資料</p>
+      <p class="hint" style="text-align:left;margin:0 0 14px">${r.candidates.length>1?'請問是哪一個？':'是您家嗎？'}</p>
+      ${r.candidates.map(c=>`<button class="btn btn-main" data-pick="${esc(c.id)}" style="margin-bottom:10px;flex-direction:column;gap:2px">${r.candidates.length>1?'':'是，'}地址在 ${esc(c.hint)}<span style="font-weight:400;font-size:.85rem">去年點了：${esc(c.summary)}</span></button>`).join('')}
+      <button class="btn btn-line" id="noBtn">${r.candidates.length>1?'都不是':'不是'}，我自己重新填</button>`);
+    const pick = await new Promise(res => { $$('[data-pick]').forEach(b => b.onclick = () => res(b.dataset.pick)); $('#noBtn').onclick = () => res(null); });
+    if (!pick) { overlay(''); return false; }
+    overlay('<div class="spin"></div>帶入資料中…');
+    try { r = await API.call('lookupPrev', { activity:ACT, name:S.d.contactName.trim(), phone:S.d.phone, pick }); } catch(e) { overlay(''); return false; }
+    overlay('');
+    if (!r.ok || !r.found) return false;
+    applyPrev(r); S.step = 1; saveDraft(); render(); return true;
+  }
   if (!r.found) { if (warn) { overlay(`<p style="margin:0 0 10px">今年已經有登記紀錄</p>${warn}<button class="btn btn-main" id="okBtn">繼續填寫</button>`); await waitClick('okBtn'); overlay(''); } return false; }
   const names = Array.from(new Set(r.items.map(i=>i.name)));
   overlay(`<p style="margin:0 0 8px">找到您 ${esc(r.year)} 年的點燈資料</p>
