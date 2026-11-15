@@ -134,11 +134,11 @@ const money = n => '$' + Number(n||0).toLocaleString();
 const PAYS = ['待繳費','已回報','現場繳現金','已核對'];
 if (API.isDemo) $('#demoBanner').hidden = false;
 
-const A = { token: SS.get('daansi_lamp_token'), tab: SS.get('daansi_lamp_tab') || 'orders', year: '', data: null, q:'', pay:'', lamp:'', listLamp:'' };
+const A = { token: SS.get('daansi_lamp_token'), tab: SS.get('daansi_lamp_tab') || 'orders', act: SS.get('daansi_lamp_act') || 'main', year: '', data: null, q:'', pay:'', lamp:'', listLamp:'' };
 
 async function api(action, payload){
   try{
-    const r = await API.call(action, Object.assign({ token:A.token }, payload||{}));
+    const r = await API.call(action, Object.assign({ token:A.token, activity:A.act }, payload||{}));
     if (r && r.auth === false) { logout(true); throw new Error(r.msg); }
     return r;
   }catch(e){ toast(e.message||'連線失敗', true); return { ok:false, msg:e.message }; }
@@ -165,10 +165,11 @@ async function load(){
   if (!A.data) $('#root').innerHTML = '<div class="empty">資料載入中…</div>';
   const r = await api('adminData', { year:A.year });
   if (!r.ok) { if (A.token) $('#root').innerHTML = `<div class="empty">讀取失敗：${esc(r.msg)}</div>`; return; }
-  A.data = r; A.year = r.year; frame();
+  A.data = r; A.year = r.year; A.act = r.activity; SS.set('daansi_lamp_act', A.act); frame();
 }
 
 const S = () => A.data.settings;
+const pm = n => Number(n) > 0 ? money(n) : '金額請洽';
 const lampName = c => (S().lamps.find(l=>l.code===c)||{}).name || c;
 const itemsOf = id => A.data.items.filter(it => it.orderId === id);
 const summary = id => { const c = {}; itemsOf(id).forEach(it => c[it.lamp] = (c[it.lamp]||0)+1); return Object.keys(c).map(k => lampName(k)+' '+c[k]).join('、'); };
@@ -178,11 +179,13 @@ function frame(){
   const isCur = A.year === S().year;
   $('#root').innerHTML = `
   <header><div class="wrap"><img src="../logo.png" alt=""><h1 class="serif">${esc(S().title)}<small>點燈後台</small></h1>
+    <label class="muted">活動 <select id="actSel" style="width:auto;max-width:220px;font-weight:700">${A.data.activities.map(x=>`<option value="${esc(x.code)}" ${x.code===A.act?'selected':''}>${esc(x.title)}</option>`).join('')}</select></label>
     <label class="muted">年度 <select id="yearSel" style="width:auto">${A.data.years.map(y=>`<option ${y===A.year?'selected':''}>${y}</option>`).join('')}</select></label>
-    <a class="btn sm" href="./" target="_blank">看登記頁 ↗</a><button class="btn sm" id="outBtn">登出</button></div></header>
+    <a class="btn sm" href="${esc(actUrl())}" target="_blank">看登記頁 ↗</a><button class="btn sm" id="outBtn">登出</button></div></header>
   <nav><div class="wrap">${tabs.map(t=>`<button data-tab="${t[0]}" class="${A.tab===t[0]?'on':''}">${t[1]}</button>`).join('')}</div></nav>
   <main><div class="wrap">${isCur?'':`<div class="card" style="background:var(--gold-soft)">目前看的是 <b>${esc(A.year)} 年</b>的歷史資料（今年是 ${esc(S().year)} 年）。</div>`}<div id="tabBody"></div></div></main>`;
   $('#yearSel').onchange = e => { A.year = e.target.value; load(); };
+  $('#actSel').onchange = e => { A.act = e.target.value; SS.set('daansi_lamp_act', A.act); A.year = ''; A.lamp = ''; A.listLamp = ''; load(); };
   $('#outBtn').onclick = () => logout();
   $$('[data-tab]').forEach(b => b.onclick = () => { A.tab = b.dataset.tab; SS.set('daansi_lamp_tab', A.tab); frame(); });
   ({ orders:tabOrders, pay:tabPay, list:tabList, qr:tabQR, io:tabIO, settings:tabSettings })[A.tab]();
@@ -208,7 +211,7 @@ function tabOrders(){
     <select id="lampSel" style="max-width:160px"><option value="">全部燈種</option>${S().lamps.map(l=>`<option value="${l.code}" ${A.lamp===l.code?'selected':''}>${esc(l.name)}</option>`).join('')}</select>
   </div>
   <div class="tools">
-    <a class="btn main" id="staffBtn" href="./?staff=1" target="_blank">＋ 代客登記（電話／紙本）</a>
+    <a class="btn main" id="staffBtn" href="${esc(actUrl('staff=1'))}" target="_blank">＋ 代客登記（電話／紙本）</a>
     <button class="btn" id="reload">↻ 重新整理</button>
   </div>
   <div class="tbl-wrap"><table class="list"><thead><tr><th>單號</th><th>聯絡人</th><th>電話</th><th>點燈內容</th><th class="num">應繳</th><th>繳費</th><th>後五碼</th><th>登記時間</th><th>方式</th></tr></thead><tbody id="tb"></tbody></table></div>`;
@@ -227,7 +230,7 @@ function drawOrders(){
     return [o.id, o.contactName, o.payLast5].some(v => String(v||'').toLowerCase().includes(q)) || itemsOf(o.id).some(it => it.name.includes(q)) || (qd.length>=3 && String(o.phone).replace(/\D/g,'').includes(qd));
   }).sort((a,b) => a.id < b.id ? 1 : -1);
   $('#tb').innerHTML = list.length ? list.map(o => `<tr class="click" data-id="${esc(o.id)}"><td>${esc(o.id)}</td><td><b>${esc(o.contactName)}</b></td><td>${esc(o.phone)}</td>
-    <td class="wrapcell">${esc(summary(o.id))}</td><td class="num">${money(o.total)}</td>
+    <td class="wrapcell">${esc(summary(o.id))}</td><td class="num">${pm(o.total)}</td>
     <td><span class="pill p-${o.status==='取消'?'取消':esc(o.payStatus)}">${o.status==='取消'?'已取消':esc(o.payStatus)}</span></td><td>${esc(o.payLast5)}</td><td>${esc(o.createdAt)}</td><td class="muted">${esc(o.source)}</td></tr>`).join('')
     : `<tr><td colspan="9" class="empty">沒有資料</td></tr>`;
   $$('#tb tr[data-id]').forEach(tr => tr.onclick = () => openOrder(tr.dataset.id));
@@ -275,7 +278,7 @@ function openOrder(id){
           ${inp('payMethod','方式')}${inp('payDate','轉帳日期')}${inp('payAmount','回報金額')}${inp('payLast5','帳號後五碼')}
           <div><label class="f">截圖</label>${o.payProof?`<button class="btn sm" id="seeProof">看截圖</button>`:'<span class="muted">無</span>'}</div>
         </div>
-        <p class="muted">應繳 <b>${money(o.total)}</b>${o.payAmount && Number(o.payAmount)!==Number(o.total)?` <span class="mismatch">（回報金額 ${money(o.payAmount)} 不一致）</span>`:''}　｜　回報：${esc(o.payReportedAt||'—')}　｜　核對：${esc(o.payCheckedAt||'—')}</p>
+        <p class="muted">應繳 <b>${pm(o.total)}</b>${o.payAmount && Number(o.total)>0 && Number(o.payAmount)!==Number(o.total)?` <span class="mismatch">（回報金額 ${money(o.payAmount)} 不一致）</span>`:''}　｜　回報：${esc(o.payReportedAt||'—')}　｜　核對：${esc(o.payCheckedAt||'—')}</p>
         <h3>管理備註</h3><textarea data-o="adminNote">${esc(o.adminNote)}</textarea>
         <p class="muted">登記：${esc(o.createdAt)}（${esc(o.source)}）　更新：${esc(o.updatedAt)}</p>
       </div>
@@ -323,9 +326,9 @@ function tabPay(){
     <p class="muted">對著網路銀行的入帳明細，比對「轉帳日期、金額、後五碼」，相符就勾起來，再按「標記已核對」。</p>
     <div class="tools"><button class="btn ok" id="bulkOk" disabled>✔ 標記已核對</button><label class="muted"><input type="checkbox" id="allChk"> 全選</label></div>
     <div class="tbl-wrap"><table class="list"><thead><tr><th></th><th>轉帳日期</th><th class="num">回報金額</th><th class="num">應繳</th><th>後五碼</th><th>方式</th><th>單號</th><th>聯絡人</th><th>電話</th><th>截圖</th><th>回報時間</th></tr></thead><tbody>
-    ${rep.length ? rep.map(o => { const mis = o.payAmount && Number(o.payAmount)!==Number(o.total); return `<tr>
+    ${rep.length ? rep.map(o => { const mis = o.payAmount && Number(o.total)>0 && Number(o.payAmount)!==Number(o.total); return `<tr>
       <td><input type="checkbox" class="chk" value="${esc(o.id)}" style="width:22px;height:22px"></td><td>${esc(o.payDate)}</td>
-      <td class="num ${mis?'mismatch':''}">${o.payAmount?money(o.payAmount):''}</td><td class="num">${money(o.total)}</td>
+      <td class="num ${mis?'mismatch':''}">${o.payAmount?money(o.payAmount):''}</td><td class="num">${pm(o.total)}</td>
       <td><b style="font-size:1.1rem;letter-spacing:.1em">${esc(o.payLast5)}</b></td><td>${esc(o.payMethod)}</td>
       <td><a href="#" data-open="${esc(o.id)}">${esc(o.id)}</a></td><td>${esc(o.contactName)}</td><td>${esc(o.phone)}</td>
       <td>${o.payProof?`<button class="btn sm" data-proof="${esc(o.payProof)}">看</button>`:''}</td><td class="muted">${esc(o.payReportedAt)}</td></tr>`; }).join('')
@@ -335,7 +338,7 @@ function tabPay(){
     <p class="muted">可以打電話提醒；點單號可修改或取消。</p>
     <div class="tbl-wrap"><table class="list"><thead><tr><th>單號</th><th>聯絡人</th><th>電話</th><th class="num">應繳</th><th>登記時間</th><th>內容</th></tr></thead><tbody>
     ${wait.length ? wait.map(o => `<tr><td><a href="#" data-open="${esc(o.id)}">${esc(o.id)}</a></td><td>${esc(o.contactName)}</td><td><a href="tel:${esc(String(o.phone).replace(/\D/g,''))}">${esc(o.phone)}</a></td>
-      <td class="num">${money(o.total)}</td><td>${esc(o.createdAt)}</td><td class="wrapcell">${esc(summary(o.id))}</td></tr>`).join('') : '<tr><td colspan="6" class="empty">全部都繳了</td></tr>'}
+      <td class="num">${pm(o.total)}</td><td>${esc(o.createdAt)}</td><td class="wrapcell">${esc(summary(o.id))}</td></tr>`).join('') : '<tr><td colspan="6" class="empty">全部都繳了</td></tr>'}
     </tbody></table></div></div>`;
   const upd = () => { $('#bulkOk').disabled = !$$('.chk:checked').length; };
   $$('.chk').forEach(c => c.onchange = upd);
@@ -385,7 +388,11 @@ function printOrders(ids){
 
 
 /* ===== QR Code ===== */
-function regUrl(){ return new URL('./', location.href).href; }
+function actUrl(extra){
+  const q = [A.act && A.act !== 'main' ? 'a=' + encodeURIComponent(A.act) : '', extra || ''].filter(Boolean).join('&');
+  return new URL('./' + (q ? '?' + q : ''), location.href).href;
+}
+function regUrl(){ return actUrl(); }
 function drawQR(text, px){
   const qr = qrcode(0, 'M'); qr.addData(text); qr.make();
   const n = qr.getModuleCount(), q = 4, cell = Math.max(1, Math.floor(px / (n + q*2))), size = cell * (n + q*2);
@@ -397,7 +404,7 @@ function drawQR(text, px){
 function rocDate(iso){ if(!iso) return ''; const [y,m,d] = iso.split('-').map(Number); return `${y-1911}年${m}月${d}日`; }
 function tabQR(){
   const s = S(), url = regUrl(), lamps = s.lamps.filter(l=>l.enabled);
-  const share = `🙏 ${s.orgName}\n【${s.title}】開始登記囉！\n\n${lamps.map(l=>`🏮 ${l.name}　${money(l.price)}／${l.unit==='戶'?'一戶':'一人'}${l.quota?`（限量 ${l.quota} 盞）`:''}`).join('\n')}\n${s.regDeadline?`\n📅 登記截止：${rocDate(s.regDeadline)}\n`:''}\n👉 用手機點這裡就能登記：\n${url}\n\n輸入農曆生日，系統會幫您看今年要不要點太歲燈。\n去年點過燈的，輸入同一支電話就能帶出去年的資料。\n\n有問題請打：${s.contactPhone}${s.contactMobile?'　'+s.contactMobile:''}`;
+  const share = `🙏 ${s.orgName}\n【${s.title}】開始登記囉！\n\n${lamps.map(l=>`🏮 ${l.name}${Number(l.price)>0?`　${money(l.price)}／${l.unit==='戶'?'一戶':'一人'}`:''}${l.quota?`（限量 ${l.quota} 盞）`:''}`).join('\n')}\n${s.regDeadline?`\n📅 登記截止：${rocDate(s.regDeadline)}\n`:''}\n👉 用手機點這裡就能登記：\n${url}\n\n輸入農曆生日，系統會幫您看今年要不要點太歲燈。\n去年點過燈的，輸入同一支電話就能帶出去年的資料。\n\n有問題請打：${s.contactPhone}${s.contactMobile?'　'+s.contactMobile:''}`;
   $('#tabBody').innerHTML = `
   ${s.status!=='開放登記'?'<div class="card" style="background:var(--err-soft)">目前「線上登記」是截止狀態，掃描後看得到資訊但不能登記。請到「設定」改成「開放登記」。</div>':''}
   <div class="qrlayout">
@@ -421,7 +428,7 @@ function tabQR(){
   $('#poster').onclick = () => {
     const img = drawQR(url, 1200).toDataURL('image/png'), logo = new URL('../logo.png', location.href).href;
     printWin('點燈海報', `<div class="p"><img class="lg" src="${logo}"><div class="o">${esc(s.orgName)}</div><h1>${esc(s.title)}</h1><div class="badge">線上登記</div>
-      <table>${lamps.map(l=>`<tr><th>${esc(l.name)}</th><td>${money(l.price)}／${l.unit==='戶'?'一戶':'一人'}${l.quota?`（限量 ${l.quota} 盞）`:''}</td></tr>`).join('')}</table>
+      <table>${lamps.map(l=>`<tr><th>${esc(l.name)}</th><td>${Number(l.price)>0?money(l.price)+'／'+(l.unit==='戶'?'一戶':'一人'):''}${l.quota?`（限量 ${l.quota} 盞）`:''}</td></tr>`).join('')}</table>
       <img class="qr" src="${img}"><div class="scan">📱 用手機相機對準，就可以登記</div>
       ${s.regDeadline?`<div class="dl">登記截止：${rocDate(s.regDeadline)}</div>`:''}<div class="tel">洽詢：${esc(s.contactPhone)}${s.contactMobile?'　'+esc(s.contactMobile):''}</div><div class="u">${esc(url)}</div></div>`
       + `<style>.p{text-align:center;padding:6mm 10mm;border:3px double #800080;min-height:265mm;box-sizing:border-box}.lg{width:24mm;height:24mm;margin:2mm auto 0;display:block}
@@ -484,10 +491,18 @@ function tabSettings(){
   const inp = (k,l,ph,cls,type) => `<div class="${cls||''}"><label class="f">${l}</label><input type="${type||'text'}" data-s="${k}" value="${esc(s[k])}" placeholder="${esc(ph||'')}"></div>`;
   const TRI = LampCore.TRI, MONTH = ['1、9月','2、10月','3、11月','4、12月','5月','6月','7月','8月'];
   $('#tabBody').innerHTML = `
+  <div class="card" style="border:2px solid var(--red)"><h2>目前編輯的活動：${esc(s.title)}</h2>
+    <p class="muted">每個活動有自己的燈種、帳戶、名單與 QR Code，共用這個後台。活動代碼：<b>${esc(s.code)}</b>　單號開頭：<b>${esc((s.idPrefix||'')+s.year)}-</b>　登記網址：${esc(regUrl())}</p>
+    <div class="grid g3">
+      <label class="muted"><input type="checkbox" data-sb="askAddress" ${s.askAddress!==false?'checked':''}> 要填住址</label>
+      <label class="muted"><input type="checkbox" data-sb="askBirth" ${s.askBirth!==false?'checked':''}> 要填農曆生日、性別</label>
+      <label class="muted"><input type="checkbox" data-sb="showAdvice" ${s.showAdvice!==false?'checked':''}> 提示是否需點太歲燈</label>
+    </div>
+    <div class="tools" style="margin-top:12px"><button class="btn" id="newAct">＋ 新增另一個活動（複製這個活動的設定）</button>${s.code!=='main'?'<button class="btn danger" id="delAct">刪除這個活動</button>':''}</div></div>
   <div class="card"><h2>年度與登記</h2><div class="grid g4">
     ${inp('year','年度（民國）','116')}${inp('ganzhi','干支','丁未')}${inp('title','活動名稱','丁未年（116）植福點燈','span2')}
     <div><label class="f">線上登記</label><select data-s="status">${['開放登記','截止'].map(x=>`<option ${s.status===x?'selected':''}>${x}</option>`).join('')}</select></div>
-    ${inp('regDeadline','登記截止日（過了自動關閉）','','','date')}${inp('payNote','繳費說明（顯示在完成頁）','','span2')}
+    ${inp('regDeadline','登記截止日（過了自動關閉）','','','date')}${inp('payNote','繳費說明（顯示在完成頁）','','span2')}${inp('cashText','現場繳款按鈕文字','例：到大安寺繳現金','span2')}
   </div><p class="muted">⚠ 換新年度時：改「年度、干支、活動名稱」，並到下方更新「生肖」與「命卦」規則。去年的資料會自動變成「去年紀錄」。</p></div>
   <div class="card"><h2>匯款帳戶</h2><div class="grid g4">
     ${inp('bankName','銀行名稱','例：台灣銀行')}${inp('bankCode','銀行代碼','例：004')}${inp('bankBranch','分行','例：樹林分行')}${inp('bankHolder','戶名')}
@@ -502,7 +517,7 @@ function tabSettings(){
       <td><input type="checkbox" data-l="${i}|enabled" ${l.enabled?'checked':''} style="width:22px;height:22px"></td></tr>`).join('')}
     </tbody></table></div><button class="btn sm" id="addLamp" style="margin-top:10px">＋ 新增燈種</button></div>
   <div class="card"><h2>祈求事項選項</h2><p class="muted">一行一個，會變成登記頁上可以點選的按鈕。</p><textarea id="wishes" style="min-height:140px">${esc((s.wishes||[]).join('\n'))}</textarea></div>
-  <div class="card"><h2>太歲規則：生肖（以農曆出生年）</h2><p class="muted">有填原因的生肖，登記頁會提示「建議點太歲燈」。</p>
+  ${s.showAdvice===false?'':`<div class="card"><h2>太歲規則：生肖（以農曆出生年）</h2><p class="muted">有填原因的生肖，登記頁會提示「建議點太歲燈」。</p>
     <div class="grid g4">${LampCore.ZODIAC.map(z=>`<div><label class="f">屬${z}（${LampCore.branchOfZodiac(z)}）</label><input type="text" data-z="${z}" value="${esc((s.zodiacRules||{})[z]||'')}" placeholder="不需點燈"></div>`).join('')}</div></div>
   <div class="card"><h2>太歲規則：命卦（以農曆生月、日）</h2>
     <p class="muted">命卦算法：下卦看月份（1、9月乾…8月坤），上卦看日期除以 8 的餘數。選了原因的命卦會提示點燈。</p>
@@ -512,7 +527,7 @@ function tabSettings(){
         <option value="next" ${s.leapRule==='next'?'selected':''}>閏月算下個月</option>
         <option value="split" ${s.leapRule==='split'?'selected':''}>閏月上半月算本月、下半月（16日起）算下個月</option></select>
         <p class="muted">本宗門的閏月算法請向講師確認後設定。</p></div></div>
-    <div id="guaBox"></div></div>
+    <div id="guaBox"></div></div>`}
   <div class="card"><button class="btn main" id="saveSet" style="min-width:200px">儲存全部設定</button></div>
   <div class="card"><h2>變更後台密碼</h2><div class="grid g3"><div><label class="f">目前密碼</label><input type="password" id="op"></div><div><label class="f">新密碼（至少 6 個字）</label><input type="password" id="np"></div><div><label class="f">再輸入一次</label><input type="password" id="np2"></div></div>
     <button class="btn" id="chPw" style="margin-top:12px">變更密碼</button></div>`;
@@ -525,18 +540,29 @@ function tabSettings(){
     }).join('')}</div>`).join('');
     $$('[data-g]').forEach(el => el.onchange = () => { s.guaRules[el.dataset.g] = el.value; if (!el.value) delete s.guaRules[el.dataset.g]; el.parentNode.classList.toggle('on', !!el.value); });
   };
-  drawGua();
-  $('#applyReasons').onclick = () => { opts = $('#reasons').value.split('\n').map(x=>x.trim()).filter(Boolean); drawGua(); toast('下拉選項已更新'); };
+  if ($('#guaBox')) drawGua();
+  if ($('#applyReasons')) $('#applyReasons').onclick = () => { opts = $('#reasons').value.split('\n').map(x=>x.trim()).filter(Boolean); drawGua(); toast('下拉選項已更新'); };
   $$('[data-s]').forEach(el => el.addEventListener('change', () => s[el.dataset.s] = el.value));
+  $$('[data-sb]').forEach(el => el.onchange = () => { s[el.dataset.sb] = el.checked; });
+  $('#newAct').onclick = async () => {
+    const title = prompt('新活動的名稱（例：戊申年七十二天師燈）'); if (!title) return;
+    const code = prompt('活動代碼（英文小寫＋數字，會出現在網址裡，例：tianshi117）'); if (!code) return;
+    const r = await api('createActivity', { title, code });
+    if (r.ok) { A.act = r.code; SS.set('daansi_lamp_act', A.act); A.year = ''; toast('已新增活動，請修改燈種與帳戶後，把「線上登記」改成開放'); load(); } else toast(r.msg, true);
+  };
+  const da = $('#delAct'); if (da) da.onclick = async () => {
+    if (!confirm(`確定刪除活動「${s.title}」？（已有登記資料的活動不能刪除）`)) return;
+    const r = await api('deleteActivity', {}); if (r.ok) { A.act = 'main'; SS.set('daansi_lamp_act','main'); A.year = ''; toast('已刪除'); load(); } else toast(r.msg, true);
+  };
   $$('[data-s]').forEach(el => el.addEventListener('input', () => s[el.dataset.s] = el.value));
   $$('[data-z]').forEach(el => el.addEventListener('input', () => { if (el.value.trim()) s.zodiacRules[el.dataset.z] = el.value.trim(); else delete s.zodiacRules[el.dataset.z]; }));
-  const bindLamps = () => $$('[data-l]').forEach(el => el.onchange = () => { const [i,k] = el.dataset.l.split('|'); s.lamps[+i][k] = el.type==='checkbox' ? el.checked : (k==='price' ? Number(el.value) : el.value); });
+  const bindLamps = () => $$('[data-l]').forEach(el => el.onchange = () => { const [i,k] = el.dataset.l.split('|'); s.lamps[+i][k] = el.type==='checkbox' ? el.checked : (k==='price' ? (el.value === '' ? '' : Number(el.value)) : el.value); });
   bindLamps();
   $('#addLamp').onclick = () => { s.lamps.push({ code:'lamp'+Date.now().toString(36), name:'新燈種', price:1000, unit:'人', quota:'', enabled:false, desc:'' }); S().lamps = s.lamps; tabSettingsKeep(s); };
   $('#saveSet').onclick = async () => {
     s.wishes = $('#wishes').value.split('\n').map(x=>x.trim()).filter(Boolean);
     const r = await api('saveSettings', { settings:s });
-    if (r.ok) { toast('設定已儲存'); load(); }
+    if (r.ok) { toast('設定已儲存'); A.year = ''; load(); }
   };
   $('#chPw').onclick = async () => {
     if ($('#np').value !== $('#np2').value) return toast('兩次新密碼不一樣', true);

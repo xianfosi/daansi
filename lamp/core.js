@@ -58,7 +58,7 @@ var LampCore = (function () {
     ['contactName', '聯絡人'], ['phone', '聯絡電話'], ['zip', '郵遞區號'], ['address', '地址'], ['total', '應繳金額'],
     ['payStatus', '繳費狀態'], ['payMethod', '繳費方式'], ['payDate', '轉帳日期'], ['payAmount', '回報金額'],
     ['payLast5', '帳號後五碼'], ['payProof', '轉帳截圖'], ['payReportedAt', '回報時間'], ['payCheckedAt', '核對時間'],
-    ['userNote', '信眾備註'], ['adminNote', '管理備註'], ['updatedAt', '更新時間']
+    ['userNote', '信眾備註'], ['adminNote', '管理備註'], ['updatedAt', '更新時間'], ['activity', '活動代碼']
   ];
   var ITEM_COLS = [
     ['id', '明細編號'], ['orderId', '點燈單號'], ['year', '年度'], ['lamp', '燈種'], ['price', '金額'],
@@ -70,6 +70,8 @@ var LampCore = (function () {
   var PAY = { WAIT: '待繳費', REPORTED: '已回報', CASH: '現場繳現金', OK: '已核對' };
 
   var DEFAULT_SETTINGS = {
+    code: 'main', idPrefix: '', askBirth: true, askAddress: true, showAdvice: true,
+    cashText: '到大安寺繳現金',
     orgName: '禪機山唯心聖教仙佛寺 台北道場大安寺',
     year: '116', ganzhi: '丁未',
     title: '丁未年（116）植福點燈',
@@ -97,8 +99,28 @@ var LampCore = (function () {
       return r;
     })()
   };
-  var JSON_KEYS = ['lamps', 'wishes', 'zodiacRules', 'guaRules'];
-  var PUBLIC_SETTING_KEYS = ['orgName', 'year', 'ganzhi', 'title', 'status', 'regDeadline', 'payNote', 'bankName', 'bankCode', 'bankBranch',
+  // 其他活動（例：仙佛寺供養燈）：各自有燈種、帳戶、名單，共用同一個後台
+  function makeGongyang() {
+    var g = clone(DEFAULT_SETTINGS);
+    delete g.extraActivities;
+    g.code = 'gongyang'; g.idPrefix = 'GY';
+    g.title = '仙佛寺供養燈'; g.orgName = '禪機山唯心聖教 仙佛寺';
+    g.askBirth = false; g.askAddress = false; g.showAdvice = false;
+    g.cashText = '直接到仙佛寺繳款';
+    g.payNote = '轉帳時請在備註欄註明「報名人名字」。也可以直接到仙佛寺繳款。';
+    g.bankName = '烏日區農會'; g.bankCode = '876'; g.bankBranch = ''; g.bankAccount = '87601-01-010330-7'; g.bankHolder = '禪機山仙佛寺張馨方';
+    g.privacy = '所填資料僅供仙佛寺辦理供養燈與聯繫使用，不會提供給其他單位。';
+    g.lamps = [
+      { code: 'tianshi', name: '丁未年七十二天師燈', price: '', unit: '人', quota: '', enabled: true, desc: '' },
+      { code: 'luohan', name: '極樂殿五百羅漢燈', price: '', unit: '人', quota: '', enabled: true, desc: '' }
+    ];
+    g.zodiacRules = {}; g.guaRules = {};
+    return g;
+  }
+  DEFAULT_SETTINGS.extraActivities = [makeGongyang()];
+  var JSON_KEYS = ['lamps', 'wishes', 'zodiacRules', 'guaRules', 'extraActivities'];
+  var BOOL_KEYS = ['askBirth', 'askAddress', 'showAdvice'];
+  var PUBLIC_SETTING_KEYS = ['code', 'askBirth', 'askAddress', 'showAdvice', 'cashText', 'orgName', 'year', 'ganzhi', 'title', 'status', 'regDeadline', 'payNote', 'bankName', 'bankCode', 'bankBranch',
     'bankAccount', 'bankHolder', 'contactPhone', 'contactMobile', 'lineUrl', 'privacy', 'leapRule', 'lamps', 'wishes', 'zodiacRules', 'guaRules'];
 
   /* ================= 工具 ================= */
@@ -109,18 +131,35 @@ var LampCore = (function () {
   function lampOf(s, code) { return (s.lamps || []).filter(function (l) { return l.code === code; })[0]; }
   function lampByName(s, name) { return (s.lamps || []).filter(function (l) { return l.name === name || l.code === name; })[0]; }
   function curYear(s) { return str(s.year); }
-  function activeOrders(db, year) { return db.orders.filter(function (o) { return o.year === year && o.status !== '取消'; }); }
+  function actOf(o) { return o.activity || 'main'; }
+  function activeOrders(db, year, act) { return db.orders.filter(function (o) { return o.year === year && o.status !== '取消' && actOf(o) === (act || 'main'); }); }
+  /** 取得某個活動的設定（main＝原本的植福點燈） */
+  function getAct(db, code) {
+    var s = db.settings;
+    if (!code || code === 'main') return s;
+    var list = s.extraActivities || [];
+    for (var i = 0; i < list.length; i++) if (list[i].code === code) return fillAct(list[i]);
+    return s;
+  }
+  function fillAct(a) {
+    var base = clone(DEFAULT_SETTINGS); delete base.extraActivities;
+    Object.keys(a).forEach(function (k) { base[k] = a[k]; });
+    return base;
+  }
+  function actList(db) {
+    return [{ code: 'main', title: db.settings.title }].concat((db.settings.extraActivities || []).map(function (a) { return { code: a.code, title: a.title }; }));
+  }
 
-  function used(db, year, code) {
+  function used(db, year, code, act) {
     var ok = {};
-    activeOrders(db, year).forEach(function (o) { ok[o.id] = 1; });
+    activeOrders(db, year, act).forEach(function (o) { ok[o.id] = 1; });
     return db.items.filter(function (it) { return it.lamp === code && ok[it.orderId]; }).length;
   }
   function lampsWithStock(db, s) {
     var y = curYear(s);
     return (s.lamps || []).map(function (l) {
       var c = clone(l), q = num(l.quota);
-      c.used = used(db, y, l.code);
+      c.used = used(db, y, l.code, s.code);
       c.left = q > 0 ? Math.max(0, q - c.used) : null;
       return c;
     });
@@ -137,10 +176,10 @@ var LampCore = (function () {
     return (s.lamps || []).filter(function (l) { return cnt[l.code]; }).map(function (l) { return l.name + ' ' + cnt[l.code]; }).join('、');
   }
   function publicSettings(s) { var o = {}; PUBLIC_SETTING_KEYS.forEach(function (k) { o[k] = s[k]; }); return o; }
-  function nextOrderId(db, year) {
-    var max = 0;
-    db.orders.forEach(function (o) { if (o.year === year) max = Math.max(max, num(String(o.id).split('-').pop())); });
-    return year + '-' + ('000' + (max + 1)).slice(-4);
+  function nextOrderId(db, year, s) {
+    var pre = str(s && s.idPrefix).toUpperCase(), head = pre + year, max = 0;
+    db.orders.forEach(function (o) { var p = String(o.id).split('-'); if (p.length === 2 && p[0] === head) max = Math.max(max, num(p[1])); });
+    return head + '-' + ('000' + (max + 1)).slice(-4);
   }
   function nextItemId(db, orderId, n) { return orderId + '-' + ('0' + n).slice(-2); }
   function matchContact(o, name, phone) {
@@ -178,7 +217,7 @@ var LampCore = (function () {
     for (var code in add) {
       var l = lampOf(s, code), q = num(l && l.quota);
       if (!q) continue;
-      var u = used(db, year, code);
+      var u = used(db, year, code, s.code);
       if (excludeOrderId) u -= itemsOf(db, excludeOrderId).filter(function (it) { return it.lamp === code; }).length;
       if (u + add[code] > q) {
         var left = Math.max(0, q - u);
@@ -190,7 +229,7 @@ var LampCore = (function () {
 
   /* ================= 主程式 ================= */
   function handle(req, db, env) {
-    var s = db.settings, a = req.action, y = curYear(s);
+    var s = getAct(db, req.activity), a = req.action, y = curYear(s);
     var isStaff = req.token ? env.checkToken(req.token) : false;
 
     /* ---------- 公開 ---------- */
@@ -202,7 +241,7 @@ var LampCore = (function () {
       // 用 聯絡人姓名＋手機 找「去年（或以前最近一年）」的點燈單，帶回明細
       var name = str(req.name), phone = req.phone;
       if (!name || digits(phone).length < 8) return { ok: false, msg: '請填寫姓名和電話' };
-      var mine = db.orders.filter(function (o) { return o.status !== '取消' && matchContact(o, name, phone); });
+      var mine = db.orders.filter(function (o) { return o.status !== '取消' && actOf(o) === s.code && matchContact(o, name, phone); });
       var thisYear = mine.filter(function (o) { return o.year === y; }).map(function (o) { return { id: o.id, total: o.total, payStatus: o.payStatus, summary: summary(db, o, s) }; });
       var prev = mine.filter(function (o) { return num(o.year) < num(y); }).sort(function (p, q) { return num(q.year) - num(p.year) || (q.id > p.id ? 1 : -1); });
       if (!prev.length) return { ok: true, found: false, thisYear: thisYear };
@@ -224,7 +263,7 @@ var LampCore = (function () {
       if (!str(o.contactName)) return { ok: false, msg: '請填寫聯絡人姓名' };
       if (digits(o.phone).length < 8) return { ok: false, msg: '請填寫正確的聯絡電話' };
       var year = isStaff && req.year ? str(req.year) : y;
-      var id = nextOrderId(db, year);
+      var id = nextOrderId(db, year, s);
       var b = buildItems(req.items, s, id, year, str(o.address));
       if (b.error) return { ok: false, msg: b.error };
       if (!b.items.length) return { ok: false, msg: '請至少選一盞燈' };
@@ -234,7 +273,7 @@ var LampCore = (function () {
         id: id, year: year, createdAt: t, status: '有效', source: isStaff ? (req.source || '後台代登') : '線上登記',
         contactName: str(o.contactName), phone: str(o.phone), zip: digits(o.zip), address: str(o.address), total: String(b.total),
         payStatus: PAY.WAIT, payMethod: '', payDate: '', payAmount: '', payLast5: '', payProof: '', payReportedAt: '', payCheckedAt: '',
-        userNote: str(o.userNote), adminNote: str(o.adminNote), updatedAt: t
+        userNote: str(o.userNote), adminNote: str(o.adminNote), updatedAt: t, activity: s.code
       });
       b.items.forEach(function (it) { db.items.push(it); });
       db.dirty.orders = db.dirty.items = true;
@@ -250,8 +289,9 @@ var LampCore = (function () {
       if (!list.length) return { ok: false, msg: '查不到資料，請確認單號（或姓名）和電話是否正確' };
       return {
         ok: true, orders: list.slice(0, 10).map(function (o) {
-          var c = clone(o); delete c.adminNote; c.hasProof = !!o.payProof; delete c.payProof;
-          c.items = itemsOf(db, o.id).map(function (it) { return { lamp: it.lamp, name: it.name, wish: it.wish, price: it.price, takeBack: it.takeBack, male: it.male, female: it.female, family: it.family }; });
+          var c = clone(o), oa = getAct(db, actOf(o)); delete c.adminNote; c.hasProof = !!o.payProof; delete c.payProof;
+          c.act = { code: oa.code, title: oa.title, bankName: oa.bankName, bankCode: oa.bankCode, bankBranch: oa.bankBranch, bankAccount: oa.bankAccount, bankHolder: oa.bankHolder, payNote: oa.payNote, cashText: oa.cashText };
+          c.items = itemsOf(db, o.id).map(function (it) { var l = lampOf(oa, it.lamp); return { lamp: it.lamp, lampName: l ? l.name : it.lamp, name: it.name, wish: it.wish, price: it.price, takeBack: it.takeBack, male: it.male, female: it.female, family: it.family }; });
           return c;
         })
       };
@@ -262,7 +302,7 @@ var LampCore = (function () {
       if (!od) return { ok: false, msg: '查不到這張點燈單' };
       if (od.payStatus === PAY.OK) return { ok: false, msg: '這張單已經核對完成，不需要再回報' };
       if (req.method === '現金') {
-        od.payMethod = '現場繳現金'; od.payStatus = PAY.CASH;
+        od.payMethod = getAct(db, actOf(od)).cashText || '現場繳現金'; od.payStatus = PAY.CASH;
       } else {
         if (!/^\d{5}$/.test(digits(req.last5))) return { ok: false, msg: '帳號後五碼請填 5 個數字' };
         od.payMethod = req.method === '代轉' ? '家人代轉' : '轉帳';
@@ -286,11 +326,12 @@ var LampCore = (function () {
     switch (a) {
       case 'adminData': {
         var yy = str(req.year) || y;
-        var ords = db.orders.filter(function (o) { return o.year === yy; });
+        var ords = db.orders.filter(function (o) { return o.year === yy && actOf(o) === s.code; });
         var ids = {}; ords.forEach(function (o) { ids[o.id] = 1; });
-        var years = {}; db.orders.forEach(function (o) { years[o.year] = 1; }); years[y] = 1;
+        var years = {}; db.orders.forEach(function (o) { if (actOf(o) === s.code) years[o.year] = 1; }); years[y] = 1;
+        var sv = clone(s); delete sv.extraActivities;
         return {
-          ok: true, settings: s, lamps: lampsWithStock(db, s), year: yy,
+          ok: true, settings: sv, lamps: lampsWithStock(db, s), year: yy, activity: s.code, activities: actList(db),
           years: Object.keys(years).sort().reverse(),
           orders: ords, items: db.items.filter(function (it) { return ids[it.orderId]; })
         };
@@ -304,9 +345,10 @@ var LampCore = (function () {
         if (f.payStatus === PAY.OK && !or.payCheckedAt) or.payCheckedAt = env.now();
         if (f.payStatus && f.payStatus !== PAY.OK) or.payCheckedAt = '';
         if (req.items) {
-          var bi = buildItems(req.items, s, or.id, or.year, or.address);
+          var os = getAct(db, actOf(or));
+          var bi = buildItems(req.items, os, or.id, or.year, or.address);
           if (bi.error) return { ok: false, msg: bi.error };
-          if (or.year === y && or.status !== '取消') { var q2 = checkQuota(db, s, or.year, bi.items, or.id); if (q2) return { ok: false, msg: q2 }; }
+          if (or.year === curYear(os) && or.status !== '取消') { var q2 = checkQuota(db, os, or.year, bi.items, or.id); if (q2) return { ok: false, msg: q2 }; }
           db.items = db.items.filter(function (it) { return it.orderId !== or.id; }).concat(bi.items);
           or.total = String(bi.total);
           db.dirty.items = true;
@@ -332,7 +374,34 @@ var LampCore = (function () {
       case 'getFile': return env.getFile(req.fileId);
       case 'saveSettings': {
         var ns = req.settings || {};
-        Object.keys(DEFAULT_SETTINGS).forEach(function (k) { if (ns[k] !== undefined) s[k] = ns[k]; });
+        if (s.code === 'main') {
+          Object.keys(DEFAULT_SETTINGS).forEach(function (k) { if (k !== 'extraActivities' && k !== 'code' && ns[k] !== undefined) db.settings[k] = ns[k]; });
+        } else {
+          var L = db.settings.extraActivities;
+          for (var i = 0; i < L.length; i++) if (L[i].code === s.code) {
+            var m = fillAct(L[i]);
+            Object.keys(m).forEach(function (k) { if (k !== 'code' && ns[k] !== undefined) m[k] = ns[k]; });
+            L[i] = m;
+          }
+        }
+        db.dirty.settings = true;
+        return { ok: true };
+      }
+      case 'createActivity': {
+        var code = str(req.code).toLowerCase(), title = str(req.title);
+        if (!/^[a-z][a-z0-9]{1,19}$/.test(code)) return { ok: false, msg: '活動代碼請用英文小寫開頭、英文數字 2～20 字（例：lohan117）' };
+        if (code === 'main' || actList(db).some(function (x) { return x.code === code; })) return { ok: false, msg: '這個活動代碼已經有了' };
+        if (!title) return { ok: false, msg: '請填活動名稱' };
+        var na = clone(s); delete na.extraActivities;
+        na.code = code; na.title = title; na.status = '截止'; na.idPrefix = str(req.idPrefix || code.slice(0, 2)).toUpperCase();
+        db.settings.extraActivities = (db.settings.extraActivities || []).concat([na]);
+        db.dirty.settings = true;
+        return { ok: true, code: code };
+      }
+      case 'deleteActivity': {
+        if (s.code === 'main') return { ok: false, msg: '主要活動不能刪除' };
+        if (db.orders.some(function (o) { return actOf(o) === s.code; })) return { ok: false, msg: '這個活動已經有登記資料，不能刪除（可以把線上登記改成「截止」）' };
+        db.settings.extraActivities = db.settings.extraActivities.filter(function (x) { return x.code !== s.code; });
         db.dirty.settings = true;
         return { ok: true };
       }
@@ -372,12 +441,12 @@ var LampCore = (function () {
     if (dryRun) return { ok: true, dryRun: true, orders: order.length, items: order.reduce(function (n, k) { return n + groups[k].items.length; }, 0) };
     var t = env.now(), made = 0;
     order.forEach(function (gk) {
-      var g = groups[gk], id = nextOrderId(db, g.year);
+      var g = groups[gk], id = nextOrderId(db, g.year, s);
       var b = buildItems(g.items, s, id, g.year, g.address);
       if (b.error) return;
       db.orders.push({ id: id, year: g.year, createdAt: t, status: '有效', source: 'Excel匯入', contactName: g.contactName, phone: g.phone, zip: '',
         address: g.address, total: String(b.total), payStatus: g.pay || PAY.OK, payMethod: '', payDate: '', payAmount: '', payLast5: '', payProof: '',
-        payReportedAt: '', payCheckedAt: '', userNote: '', adminNote: '', updatedAt: t });
+        payReportedAt: '', payCheckedAt: '', userNote: '', adminNote: '', updatedAt: t, activity: s.code });
       b.items.forEach(function (it) { db.items.push(it); });
       made++;
     });
@@ -392,18 +461,21 @@ var LampCore = (function () {
       if (!(k in DEFAULT_SETTINGS)) return;
       var v = kv[k];
       if (JSON_KEYS.indexOf(k) >= 0 && typeof v === 'string') { try { v = JSON.parse(v); } catch (e) { return; } }
+      if (BOOL_KEYS.indexOf(k) >= 0 && typeof v === 'string') v = v !== 'false' && v !== '';
       s[k] = v;
     });
+    s.code = 'main';
+    s.extraActivities = (s.extraActivities || []).map(fillAct);
     return s;
   }
   function settingsToKv(s) {
     var kv = {};
-    Object.keys(DEFAULT_SETTINGS).forEach(function (k) { kv[k] = JSON_KEYS.indexOf(k) >= 0 ? JSON.stringify(s[k]) : str(s[k]); });
+    Object.keys(DEFAULT_SETTINGS).forEach(function (k) { kv[k] = JSON_KEYS.indexOf(k) >= 0 ? JSON.stringify(s[k]) : BOOL_KEYS.indexOf(k) >= 0 ? String(!!s[k]) : str(s[k]); });
     return kv;
   }
 
   return {
-    handle: handle, gua: gua, zodiac: zodiac, advise: advise, branchOfZodiac: branchOfZodiac,
+    handle: handle, getAct: getAct, gua: gua, zodiac: zodiac, advise: advise, branchOfZodiac: branchOfZodiac,
     TRI: TRI, TRI_IMG: TRI_IMG, GUA: GUA, ZODIAC: ZODIAC, ORDER_COLS: ORDER_COLS, ITEM_COLS: ITEM_COLS, PAY: PAY,
     DEFAULT_SETTINGS: DEFAULT_SETTINGS, IMPORT_HEAD: IMPORT_HEAD, parseSettings: parseSettings, settingsToKv: settingsToKv
   };

@@ -176,6 +176,7 @@ const $$ = s => Array.from(document.querySelectorAll(s));
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LS = { get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}, del(k){try{localStorage.removeItem(k);}catch(e){}} };
 const money = n => '$' + Number(n||0).toLocaleString();
+const pm = n => Number(n) > 0 ? money(n) : '金額請洽';
 const digits = v => String(v||'').replace(/\D/g,'');
 
 const root = document.documentElement;
@@ -187,10 +188,19 @@ if (API.isDemo) $('#demoBanner').hidden = false;
 
 const params = new URLSearchParams(location.search);
 const staffToken = params.get('staff') ? (localStorage.getItem('daansi_lamp_token') || '') : '';
-const STEPS = ['聯絡人', '住址', '光明燈', '個人點燈', '檢查一次'];
+const ACT = (params.get('a') || 'main').toLowerCase();
+function steps(){
+  const st = S.settings, k = ['contact'];
+  if (st.askAddress !== false) k.push('address');
+  if (hhLamps().length) k.push('hh');
+  if (pLamps().length) k.push('people');
+  return k;
+}
+const stepKey = () => steps()[S.step] || 'contact';
+const stepIdx = k => Math.max(0, steps().indexOf(k));
 
 const S = { settings:{}, lamps:[], open:false, staff:false, screen:'loading', step:0, d:null, edit:null, editIdx:-1, result:null, q:{}, qres:null, report:null, prevAsked:false };
-const DRAFT = 'daansi_lamp_draft';
+const DRAFT = 'daansi_lamp_draft_' + ACT;
 
 const hhLamps = () => S.lamps.filter(l => l.enabled && l.unit === '戶');
 const pLamps  = () => S.lamps.filter(l => l.enabled && l.unit !== '戶');
@@ -203,9 +213,10 @@ function saveDraft(){ if (S.d) LS.set(DRAFT, { d:S.d, step:S.step, year:S.settin
 /* ===== 載入 ===== */
 async function init(){
   try{
-    const r = await API.call('init', { token: staffToken });
+    const r = await API.call('init', { token: staffToken, activity: ACT });
     if (!r.ok) throw new Error(r.msg);
     S.settings = r.settings; S.lamps = r.lamps; S.open = r.open; S.staff = !!r.staff;
+    document.title = S.settings.title || document.title;
     const on = (S.settings.orgName||'').split(/\s+/); $('#orgName').textContent = on.pop() || '台北道場大安寺'; $('#orgTop').textContent = on.join(' ');
     if (S.staff) $('#staffBanner').hidden = false;
     S.screen = params.get('q') ? 'query' : 'home';
@@ -242,7 +253,7 @@ function viewHome(){
     <p class="sub">${S.open ? '● 線上登記中' : '目前未開放線上登記'}${s.regDeadline ? `　｜　登記截止：${rocDate(s.regDeadline)}` : ''}</p>
   </div>
   <div class="card">
-    ${S.lamps.filter(l=>l.enabled).map(l=>`<div class="lampcard"><b>${esc(l.name)}</b><span class="price">${money(l.price)} / ${l.unit==='戶'?'一戶':'一人'}</span>
+    ${S.lamps.filter(l=>l.enabled).map(l=>`<div class="lampcard"><b>${esc(l.name)}</b><span class="price">${Number(l.price)>0 ? money(l.price)+' / '+(l.unit==='戶'?'一戶':'一人') : '金額請洽'}</span>
       <span class="d">${esc(l.desc||'')}${l.left!=null?`　<span class="left ${l.left===0?'zero':''}">${l.left===0?'已額滿':'剩 '+l.left+' 盞'}</span>`:''}</span></div>`).join('')}
   </div>
   ${S.open || S.staff ? (hasDraft ? `<div class="alert info">您上次還沒填完，要接著填嗎？</div>
@@ -276,21 +287,21 @@ function inp(k, label, o){
 }
 
 function viewForm(){
-  const n = S.step, d = S.d; let body = '';
-  if (n === 0) body = `
+  const n = S.step, key = stepKey(), d = S.d, st = S.settings, ST = steps(); let body = '';
+  if (key === 'contact') body = `
     ${inp('contactName','聯絡人姓名',{req:1,ph:'例：王大明',ac:'name'})}
     ${inp('phone','聯絡電話（手機）',{req:1,type:'tel',im:'tel',ph:'例：0912345678',ac:'tel',hint:'去年點過燈的話，用同一支電話，系統會幫您帶出去年的資料'})}`;
-  else if (n === 1) body = `
+  else if (key === 'address') body = `
     <div class="field" id="w_address"><label class="lbl" for="f_address">地址<span class="req">必填</span></label>
       <div style="display:grid;grid-template-columns:5.5em 1fr;gap:8px">
         <input type="text" inputmode="numeric" maxlength="6" data-k="zip" value="${esc(d.zip)}" placeholder="郵遞區號" aria-label="郵遞區號">
         <input id="f_address" type="text" data-k="address" value="${esc(d.address)}" placeholder="例：新北市樹林區…" autocomplete="street-address"></div>
       <p class="hint">燈牌與疏文會用到；郵遞區號不知道可以空白</p><div class="errmsg">請填寫地址</div></div>`;
-  else if (n === 2) {
+  else if (key === 'hh') {
     const hl = hhLamps();
     if (!hl.length) body = `<div class="skipnote">今年沒有以戶為單位的燈，請按「下一步」。</div>`;
     else body = `
-      <div class="field" id="w_wantHH"><span class="lbl">要點${esc(hl[0].name)}嗎？（一戶一盞 ${money(hl[0].price)}）</span>
+      <div class="field" id="w_wantHH"><span class="lbl">要點${esc(hl[0].name)}嗎？（一戶一盞 ${pm(hl[0].price)}）</span>
         <div class="choices"><button type="button" class="choice ${d.wantHH===true?'on':''}" data-want="1">要點</button><button type="button" class="choice ${d.wantHH===false?'on':''}" data-want="0">不用</button></div>
         <p class="hint">一戶一盞，一個人住也可以點一盞</p><div class="errmsg">請選「要點」或「不用」</div></div>
       ${d.wantHH ? d.households.map((h,i)=>`
@@ -299,7 +310,7 @@ function viewForm(){
           ${hl.length>1?`<div class="chips" style="margin:10px 0">${hl.map(l=>`<button type="button" class="chip ${h.lamp===l.code?'on':''}" data-hhlamp="${i}|${l.code}">${esc(l.name)}</button>`).join('')}</div>`:''}
           <div class="field" style="margin-top:12px" id="w_hh${i}"><label class="lbl">戶長姓名<span class="req">必填</span></label>
             <input type="text" data-h="${i}|name" value="${esc(h.name)}" placeholder="戶長姓名"><div class="errmsg">請填戶長姓名</div></div>
-          <div class="field"><span class="lbl">戶長農曆生日<span class="opt">（可不填）</span></span>${birthInputs(f => `data-h="${i}|${f}"`, h)}</div>
+          ${st.askBirth!==false?`<div class="field"><span class="lbl">戶長農曆生日<span class="opt">（可不填）</span></span>${birthInputs(f => `data-h="${i}|${f}"`, h)}</div>`:''}
           <div class="field"><span class="lbl">全戶人數</span>
             <div class="stepbox">
               <div class="steprow"><span class="k">男（丁）</span><div class="stepper"><button type="button" data-cnt="${i}|male|-1" aria-label="男減一">－</button><output>${h.male}</output><button type="button" data-cnt="${i}|male|1" aria-label="男加一">＋</button></div></div>
@@ -311,39 +322,39 @@ function viewForm(){
           <div class="field" style="margin-bottom:0"><span class="lbl">祈求事項<span class="opt">（可以選好幾個，再點一下取消）</span></span>${wishChips(`data-hhwish="${i}"`, h.wish)}</div>
         </div>`).join('') + `<button type="button" class="btn btn-line" data-go="addHH">＋ 再點一戶（例如已分家的子女）</button>` : ''}`;
   }
-  else if (n === 3) {
-    body = `<p style="margin-top:0">太歲燈、消災祈福燈是<b>一人一盞</b>。請把要點燈的人一位一位加進來。</p>
+  else if (key === 'people') {
+    body = `<p style="margin-top:0">${pLamps().map(l=>esc(l.name)).join('、')}是<b>一人一盞</b>。請把要點燈的人一位一位加進來${pLamps().length>1?'，同一個人可以點好幾種燈':''}。</p>
       ${d.people.length ? d.people.map((p,i)=>{
         const adv = LampCore.advise(p, S.settings), ls = pLamps().filter(l=>p.lamps[l.code]);
         return `<div class="person"><h3>${esc(p.name)}<span class="meta">${p.gender||''}</span></h3>
-          <div class="meta">${p.birthY?`農曆 民國${esc(p.birthY)}年${p.leap?'閏':''}${esc(p.birthM)}月${esc(p.birthD)}日`:'未填生日'}${adv.zodiac?`　屬${adv.zodiac}`:''}</div>
-          <div class="tags">${ls.map(l=>`<span class="tag">${esc(l.name)} ${money(l.price)}</span>`).join('') || '<span class="tag warn">還沒選燈</span>'}</div>
+          ${st.askBirth!==false?`<div class="meta">${p.birthY?`農曆 民國${esc(p.birthY)}年${p.leap?'閏':''}${esc(p.birthM)}月${esc(p.birthD)}日`:'未填生日'}${adv.zodiac?`　屬${adv.zodiac}`:''}</div>`:''}
+          <div class="tags">${ls.map(l=>`<span class="tag">${esc(l.name)}${Number(l.price)>0?' '+money(l.price):''}</span>`).join('') || '<span class="tag warn">還沒選燈</span>'}</div>
           <div class="minibtns"><button type="button" data-editp="${i}">修改</button><button type="button" class="del" data-rmp="${i}">刪除</button></div></div>`;
-      }).join('') : `<div class="skipnote">${d.wantHH?'如果只點光明燈，直接按「下一步」就可以。':'請按下面的按鈕加入要點燈的人。'}</div>`}
+      }).join('') : `<div class="skipnote">${d.wantHH?`如果只點${esc((hhLamps()[0]||{}).name||'')}，直接按「下一步」就可以。`:'請按下面的按鈕加入要點燈的人。'}</div>`}
       <button type="button" class="btn btn-main" data-go="addP" style="box-shadow:none">＋ 加一位要點燈的人</button>`;
   }
   return `<div class="card">
-    <div class="stepinfo">第 ${n+1} 步，共 ${STEPS.length} 步</div>
-    <div class="progress">${STEPS.map((s,i)=>`<i class="${i<=n?'on':''}"></i>`).join('')}</div>
-    <h2 class="serif">${['聯絡人資料','住址','光明燈（一戶一盞）','太歲燈・消災祈福燈（一人一盞）'][n]}</h2>
+    <div class="stepinfo">第 ${n+1} 步，共 ${ST.length+1} 步</div>
+    <div class="progress">${ST.concat(['confirm']).map((s,i)=>`<i class="${i<=n?'on':''}"></i>`).join('')}</div>
+    <h2 class="serif">${{ contact:'聯絡人資料', address:'住址', hh:(hhLamps()[0]||{}).name+'（一戶一盞）', people:pLamps().map(l=>l.name).join('・')+'（一人一盞）' }[key]}</h2>
     ${body}</div>`;
 }
 
 function viewEditP(){
-  const p = S.edit, adv = LampCore.advise(p, S.settings), hasBirth = p.birthM && p.birthD;
+  const p = S.edit, st = S.settings, adv = LampCore.advise(p, st), hasBirth = p.birthM && p.birthD;
   const taisui = pLamps().find(l=>l.code==='taisui');
   return `<div class="card">
     <h2 class="serif">${S.editIdx<0?'加一位要點燈的人':'修改：'+esc(p.name)}</h2>
     <div class="field" id="w_pname"><label class="lbl" for="f_pname">姓名<span class="req">必填</span></label>
       <input id="f_pname" type="text" data-p="name" value="${esc(p.name)}" placeholder="例：王小明"><div class="errmsg">請填姓名</div></div>
-    <div class="field"><span class="lbl">性別</span><div class="choices">${['男','女'].map(g=>`<button type="button" class="choice ${p.gender===g?'on':''}" data-pg="${g}">${g}</button>`).join('')}</div></div>
-    <div class="field"><span class="lbl">農曆出生日期<span class="opt">（填了可以幫您看今年要不要點太歲燈）</span></span>${birthInputs(f => `data-p="${f}"`, p)}</div>
-    <div id="adviceBox">${adviceHtml(p, adv, hasBirth)}</div>
+    ${st.askBirth!==false?`<div class="field"><span class="lbl">性別</span><div class="choices">${['男','女'].map(g=>`<button type="button" class="choice ${p.gender===g?'on':''}" data-pg="${g}">${g}</button>`).join('')}</div></div>
+    <div class="field"><span class="lbl">農曆出生日期<span class="opt">（${st.showAdvice!==false?'填了可以幫您看今年要不要點太歲燈':'可不填'}）</span></span>${birthInputs(f => `data-p="${f}"`, p)}</div>
+    <div id="adviceBox">${st.showAdvice!==false?adviceHtml(p, adv, hasBirth):''}</div>`:''}
     <div class="field" id="w_plamps"><span class="lbl">要點哪些燈？<span class="req">至少選一盞</span></span>
       ${pLamps().map(l=>{ const full = l.left===0 && !p.lamps[l.code]; return `<label class="lampopt ${p.lamps[l.code]?'on':''} ${full?'dis':''}">
         <input type="checkbox" data-pl="${l.code}" ${p.lamps[l.code]?'checked':''} ${full?'disabled':''}>
         <span><b>${esc(l.name)}</b><span class="hint" style="margin:0">${esc(l.desc||'')}${l.left!=null?`　<span class="left ${l.left===0?'zero':''}">${l.left===0?'已額滿':'剩 '+l.left+' 盞'}</span>`:''}</span></span>
-        <span class="p">${money(l.price)}</span></label>`; }).join('')}
+        <span class="p">${pm(l.price)}</span></label>`; }).join('')}
       <div class="errmsg">請至少選一盞燈</div></div>
     ${p.lamps.xiaozai ? `<div class="field"><span class="lbl">消災祈福燈，法會後要把燈帶回家嗎？</span>
       <div class="choices">${['取回','不取回'].map(t=>`<button type="button" class="choice ${p.takeBack===t?'on':''}" data-tb="${t}">${t}</button>`).join('')}</div></div>` : ''}
@@ -364,23 +375,23 @@ function lines(){
 }
 
 function viewConfirm(){
-  const d = S.d, ls = lines(), total = ls.reduce((s,x)=>s+Number(x.lamp.price||0),0);
+  const d = S.d, ls = lines(), total = ls.reduce((s,x)=>s+Number(x.lamp.price||0),0), st = S.settings;
   return `<div class="card"><h2 class="serif">請檢查一次</h2>
       <div class="sumline"><span>聯絡人</span><span class="n">${esc(d.contactName)}　${esc(d.phone)}</span></div>
-      <div class="sumline"><span>地址</span><span class="n" style="text-align:right">${esc(d.zip)} ${esc(d.address)}</span></div>
-      <button type="button" class="btn btn-line" data-edit="0" style="min-height:48px;margin-top:10px">修改聯絡人或地址</button></div>
+      ${st.askAddress!==false?`<div class="sumline"><span>地址</span><span class="n" style="text-align:right">${esc(d.zip)} ${esc(d.address)}</span></div>`:''}
+      <button type="button" class="btn btn-line" data-edit="contact" style="min-height:48px;margin-top:10px">修改聯絡人${st.askAddress!==false?'或地址':''}</button></div>
     <div class="card"><h2 class="serif">點燈明細</h2>
-      ${ls.map(x=>`<div class="sumline"><span><span class="n">${esc(x.lamp.name)}　${esc(x.name)}</span><br><span class="m">${esc(x.meta)}</span></span><span class="n">${money(x.lamp.price)}</span></div>`).join('')}
-      <div class="total"><span>合計</span><b>${money(total)}</b></div>
-      <div class="row2" style="margin-top:14px"><button type="button" class="btn btn-line" data-edit="2" style="min-height:50px">改光明燈</button><button type="button" class="btn btn-line" data-edit="3" style="min-height:50px">改個人點燈</button></div></div>
+      ${ls.map(x=>`<div class="sumline"><span><span class="n">${esc(x.lamp.name)}　${esc(x.name)}</span>${x.meta?`<br><span class="m">${esc(x.meta)}</span>`:''}</span><span class="n">${Number(x.lamp.price)>0?money(x.lamp.price):''}</span></div>`).join('')}
+      <div class="total"><span>合計 ${ls.length} 盞</span><b>${pm(total)}</b></div>
+      <div class="row2" style="margin-top:14px">${hhLamps().length?`<button type="button" class="btn btn-line" data-edit="hh" style="min-height:50px">改${esc(hhLamps()[0].name)}</button>`:''}<button type="button" class="btn btn-line" data-edit="people" style="min-height:50px">改點燈名單</button></div></div>
     <div class="card">
       <div class="field"><label class="lbl" for="f_note">想跟我們說的話<span class="opt">（可不填）</span></label><textarea id="f_note" data-k="userNote">${esc(d.userNote)}</textarea></div>
-      <div class="field" id="w_agree" style="margin-bottom:0"><label class="check ${d.agree?'on':''}"><input type="checkbox" data-k="agree" ${d.agree?'checked':''}><span>我同意大安寺使用以上資料辦理點燈<span class="req">必勾</span></span></label>
+      <div class="field" id="w_agree" style="margin-bottom:0"><label class="check ${d.agree?'on':''}"><input type="checkbox" data-k="agree" ${d.agree?'checked':''}><span>我同意使用以上資料辦理點燈<span class="req">必勾</span></span></label>
         <p class="hint">${esc(S.settings.privacy||'')}</p><div class="errmsg">請勾選「我同意」才能送出</div></div></div>`;
 }
 
-function bankHtml(){
-  const s = S.settings;
+function bankHtml(src){
+  const s = src || S.settings;
   if (!s.bankAccount) return `<div class="bank">匯款帳號請洽大安寺：${esc(s.contactPhone)}</div>`;
   return `<div class="bank"><div class="sub">轉帳到這個帳戶</div>
     <div><b>${esc(s.bankName)}</b>${s.bankCode?`（代碼 ${esc(s.bankCode)}）`:''}${s.bankBranch?` ${esc(s.bankBranch)}`:''}</div>
@@ -395,11 +406,11 @@ function viewDone(){
     <div class="ok-circle"><svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
     <h1 class="serif">登記完成！</h1><p>${esc(r.name)}，感恩您的護持。</p>
     <div class="sub">點燈單號</div><div class="no">${esc(r.id)}</div>
-    <div class="total" style="border:0;margin:0"><span>應繳金額</span><b>${money(r.total)}</b></div>
+    <div class="total" style="border:0;margin:0"><span>應繳金額</span><b>${pm(r.total)}</b></div>
     <p class="hint">請把這個畫面「截圖」保存起來</p></div>
   <div class="card">${bankHtml()}
     <button class="btn btn-main" data-go="payNow">我已經轉帳了，回報帳號後五碼</button>
-    <button class="btn btn-line" data-go="cashNow">我要到大安寺繳現金</button>
+    <button class="btn btn-line" data-go="cashNow">我要${esc(S.settings.cashText||'現場繳現金')}</button>
     <button class="btn btn-line" data-go="home">先這樣，之後再回報</button>
     <p class="hint">之後回報：回到首頁按「查詢點燈／回報繳費」，輸入單號和電話就可以。</p></div>`;
 }
@@ -411,12 +422,13 @@ function viewQuery(){
   if (S.qres) res = S.qres.map(o => `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center"><b class="serif" style="font-size:1.3rem;color:var(--red)">${esc(o.id)}</b><span class="status s-${esc(o.payStatus)}">${esc(o.payStatus)}</span></div>
     <p class="sub">${esc(o.year)}年　登記：${esc(o.createdAt)}</p>
-    ${o.items.map(it=>`<div class="sumline"><span class="n">${esc(lampBy(it.lamp).name||it.lamp)}　${esc(it.name)}</span><span>${money(it.price)}</span></div>`).join('')}
-    <div class="total"><span>應繳</span><b>${money(o.total)}</b></div>
+    <p class="sub" style="margin-top:2px">${esc((o.act||{}).title||'')}</p>
+    ${o.items.map(it=>`<div class="sumline"><span class="n">${esc(it.lampName||lampBy(it.lamp).name||it.lamp)}　${esc(it.name)}</span><span>${Number(it.price)>0?money(it.price):''}</span></div>`).join('')}
+    <div class="total"><span>應繳</span><b>${pm(o.total)}</b></div>
     ${o.payStatus==='已核對' ? '<div class="alert info" style="margin-top:12px">✔ 已收到款項，感恩護持。</div>'
       : o.payStatus==='已回報' ? `<div class="alert info" style="margin-top:12px">已收到您的回報（後五碼 ${esc(o.payLast5)}），師兄姐核對後會更新。</div><button class="btn btn-line" data-rep="${esc(o.id)}">回報有錯，重新回報</button>`
-      : o.payStatus==='現場繳現金' ? `<div class="alert info" style="margin-top:12px">您選擇到大安寺繳現金。</div><button class="btn btn-line" data-rep="${esc(o.id)}">改用轉帳回報</button>`
-      : `<button class="btn btn-main" data-rep="${esc(o.id)}" style="margin-top:12px">回報繳費</button>`}
+      : o.payStatus==='現場繳現金' ? `<div class="alert info" style="margin-top:12px">您選擇${esc((o.act||{}).cashText||'現場繳現金')}。</div><button class="btn btn-line" data-rep="${esc(o.id)}">改用轉帳回報</button>`
+      : `${bankHtml(o.act)}<button class="btn btn-main" data-rep="${esc(o.id)}" style="margin-top:12px">回報繳費</button>`}
   </div>`).join('');
   return `<div class="card"><h2 class="serif">查詢點燈／回報繳費</h2>
     <div class="field"><label class="lbl" for="q_id">點燈單號<span class="opt">（忘了可以不填，改填姓名）</span></label><input id="q_id" type="text" data-q="id" value="${esc(q.id)}" placeholder="例：116-0001"></div>
@@ -429,11 +441,11 @@ function viewQuery(){
 function viewReport(){
   const r = S.report, today = new Date(); const iso = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
   if (!r.date) r.date = iso;
-  return `<div class="card"><h2 class="serif">回報繳費</h2><p class="sub">點燈單號 <b>${esc(r.id)}</b>　應繳 <b>${money(r.total)}</b></p></div>
+  return `<div class="card"><h2 class="serif">回報繳費</h2><p class="sub">點燈單號 <b>${esc(r.id)}</b>　應繳 <b>${pm(r.total)}</b></p></div>
   <div class="card">
     <div class="field"><span class="lbl">怎麼繳的？</span><div class="choices" style="grid-template-columns:1fr 1fr 1fr">
-      ${['轉帳','代轉','現金'].map(m=>`<button type="button" class="choice ${r.method===m?'on':''}" data-rm="${m}" style="font-size:1rem">${{轉帳:'自己轉帳',代轉:'家人代轉',現金:'繳現金'}[m]}</button>`).join('')}</div></div>
-    ${r.method==='現金' ? `<div class="alert info">請在${esc(S.settings.payNote?'期限內':'方便時')}到大安寺繳費，現場會幫您核對。</div>` : `
+      ${['轉帳','代轉','現金'].map(m=>`<button type="button" class="choice ${r.method===m?'on':''}" data-rm="${m}" style="font-size:1rem">${{轉帳:'自己轉帳',代轉:'家人代轉',現金:'現場繳款'}[m]}</button>`).join('')}</div></div>
+    ${r.method==='現金' ? `<div class="alert info">好的，請${esc((r.act||S.settings).cashText||'到現場繳費')}，現場會幫您核對。</div>` : `
       <div class="field" id="w_last5"><label class="lbl" for="r_last5">轉出帳號的「後五碼」<span class="req">必填</span></label>
         <input id="r_last5" type="text" inputmode="numeric" maxlength="5" data-r="last5" value="${esc(r.last5)}" placeholder="5 個數字" style="font-size:1.6rem;letter-spacing:.3em;text-align:center">
         <p class="hint">在轉帳收據、ATM 明細表或網路銀行的轉帳紀錄上都看得到</p><div class="errmsg">請填 5 個數字</div></div>
@@ -445,7 +457,7 @@ function viewReport(){
     <button class="btn btn-main" data-go="sendReport">送出回報</button>
     <button class="btn btn-line" data-go="backQuery">取消</button>
   </div>
-  ${r.method==='現金'?'':`<div class="card">${bankHtml()}</div>`}`;
+  ${r.method==='現金'?'':`<div class="card">${bankHtml(r.act)}</div>`}`;
 }
 
 function viewError(){ return `<div class="card"><h2>網路好像不太順</h2><p>請稍等一下再試一次，或直接打電話登記。</p><p class="hint">${esc(S.err)}</p><button class="btn btn-main" onclick="location.reload()">再試一次</button><div style="margin-top:12px">${contactBtns()}</div></div>`; }
@@ -454,7 +466,7 @@ function viewError(){ return `<div class="card"><h2>網路好像不太順</h2><p
 function bind(){
   bindWish();
   $$('[data-go]').forEach(b => b.onclick = () => go(b.dataset.go));
-  $$('[data-edit]').forEach(b => b.onclick = () => { S.step = +b.dataset.edit; S.screen = 'form'; render(); });
+  $$('[data-edit]').forEach(b => b.onclick = () => { S.step = stepIdx(b.dataset.edit); S.screen = 'form'; render(); });
   $$('[data-k]').forEach(el => el.addEventListener(el.type==='checkbox'?'change':'input', () => {
     const k = el.dataset.k;
     if (el.type === 'checkbox') { S.d[k] = el.checked; el.closest('.check').classList.toggle('on', el.checked); }
@@ -492,7 +504,7 @@ function bind(){
   $$('[data-tb]').forEach(b => b.onclick = () => { S.edit.takeBack = b.dataset.tb; $$('[data-tb]').forEach(x=>x.classList.toggle('on', x===b)); });
   // 查詢、回報
   $$('[data-q]').forEach(el => el.addEventListener('input', () => S.q[el.dataset.q] = el.value));
-  $$('[data-rep]').forEach(b => b.onclick = () => { const o = S.qres.find(x=>x.id===b.dataset.rep); startReport(o.id, S.q.phone, o.total); });
+  $$('[data-rep]').forEach(b => b.onclick = () => { const o = S.qres.find(x=>x.id===b.dataset.rep); startReport(o.id, S.q.phone, o.total, o.act); });
   $$('[data-rm]').forEach(b => b.onclick = () => { S.report.method = b.dataset.rm; render(); });
   $$('[data-r]').forEach(el => el.addEventListener('input', () => { let v = el.value; if (el.dataset.r==='last5') { v = digits(v).slice(0,5); el.value = v; } S.report[el.dataset.r] = v; const w = el.closest('.field'); w && w.classList.remove('bad'); }));
   const pi = $('#proofIn'); if (pi) pi.onchange = () => pi.files[0] && loadImg(pi.files[0], d => { S.report.proof = d; render(); });
@@ -522,17 +534,18 @@ async function go(a){
   else if (a === 'query') { S.screen = 'query'; S.qres = null; render(); }
   else if (a === 'prev') { if (S.step === 0) S.screen = 'home'; else S.step--; render(); }
   else if (a === 'next') {
-    if (S.step === 0) {
+    const key = stepKey();
+    if (key === 'contact') {
       if (!d.contactName.trim()) return bad('w_contactName', '請填聯絡人姓名');
       if (digits(d.phone).length < 8) return bad('w_phone', '請填正確的電話號碼');
       if (!S.prevAsked) { S.prevAsked = true; if (await askPrev()) return; }
     }
-    if (S.step === 1 && !d.address.trim()) return bad('w_address');
-    if (S.step === 2 && hhLamps().length) {
+    if (key === 'address' && !d.address.trim()) return bad('w_address');
+    if (key === 'hh') {
       if (d.wantHH === null) return bad('w_wantHH');
       if (d.wantHH) { const i = d.households.findIndex(h=>!h.name.trim()); if (i >= 0) return bad('w_hh'+i); }
     }
-    if (S.step === 3) {
+    if (S.step === steps().length - 1) {
       const nolamp = d.people.filter(p => !pLamps().some(l=>p.lamps[l.code]));
       if (nolamp.length) { alertBox(`「${nolamp.map(p=>p.name).join('、')}」還沒有選燈，請按「修改」選燈，或「刪除」這位。`); return; }
       if (!lines().length) { alertBox('還沒有選任何燈喔！請加入要點燈的人，或回上一步點光明燈。'); return; }
@@ -550,10 +563,10 @@ async function go(a){
     if (S.editIdx < 0) S.d.people.push(p); else S.d.people[S.editIdx] = p;
     S.screen = 'form'; saveDraft(); render();
   }
-  else if (a === 'backConfirm') { S.screen = 'form'; S.step = 3; render(); }
+  else if (a === 'backConfirm') { S.screen = 'form'; S.step = steps().length - 1; render(); }
   else if (a === 'submit') submit();
   else if (a === 'payNow') startReport(S.result.id, S.result.phone, S.result.total);
-  else if (a === 'cashNow') { S.report = { id:S.result.id, phone:S.result.phone, total:S.result.total, method:'現金' }; sendReport(); }
+  else if (a === 'cashNow') { S.report = { id:S.result.id, phone:S.result.phone, total:S.result.total, act:S.settings, method:'現金' }; sendReport(); }
   else if (a === 'doQuery') doQuery();
   else if (a === 'sendReport') sendReport();
   else if (a === 'backQuery') { S.screen = S.qres ? 'query' : 'done'; if (!S.result && !S.qres) S.screen = 'home'; render(); }
@@ -561,7 +574,7 @@ async function go(a){
 
 async function askPrev(){
   overlay('<div class="spin"></div>查詢中…');
-  let r; try { r = await API.call('lookupPrev', { name:S.d.contactName.trim(), phone:S.d.phone }); } catch(e) { overlay(''); return false; }
+  let r; try { r = await API.call('lookupPrev', { activity:ACT, name:S.d.contactName.trim(), phone:S.d.phone }); } catch(e) { overlay(''); return false; }
   overlay('');
   if (!r.ok) return false;
   let warn = r.thisYear && r.thisYear.length ? `<p class="hint" style="text-align:left">提醒：這支電話今年已經登記過 ${r.thisYear.map(o=>o.id+'（'+o.summary+'）').join('、')}。如果是另一戶要點燈，可以繼續。</p>` : '';
@@ -609,12 +622,12 @@ async function submit(){
   d.people.forEach(p => pLamps().forEach(l => { if (p.lamps[l.code]) items.push({ lamp:l.code, name:p.name, gender:p.gender, birthY:p.birthY, birthM:p.birthM, birthD:p.birthD, leap:p.leap, wish:p.wish, takeBack:p.takeBack }); }));
   overlay('<div class="spin"></div>資料送出中…<br><span style="font-weight:400;font-size:.9rem">請不要關掉畫面</span>');
   try{
-    const r = await API.call('submit', { token:staffToken, order:{ contactName:d.contactName, phone:d.phone, zip:d.zip, address:d.address, userNote:d.userNote }, items });
+    const r = await API.call('submit', { token:staffToken, activity:ACT, order:{ contactName:d.contactName, phone:d.phone, zip:d.zip, address:d.address, userNote:d.userNote }, items });
     overlay('');
     if (!r.ok) return alertBox(r.msg || '送出失敗，請再試一次');
     S.result = { id:r.id, total:r.total, name:d.contactName, phone:d.phone };
     LS.del(DRAFT); S.screen = 'done'; render();
-    API.call('init', { token:staffToken }).then(x => { if (x.ok) S.lamps = x.lamps; }).catch(()=>{});
+    API.call('init', { token:staffToken, activity:ACT }).then(x => { if (x.ok) S.lamps = x.lamps; }).catch(()=>{});
   }catch(e){
     overlay(`<p style="margin:0 0 6px">網路不太順，資料還沒送出</p><p class="hint" style="margin:0 0 18px">您填的資料都還在，請再按一次</p><button class="btn btn-main" id="retryBtn">再送一次</button><button class="btn btn-line" id="okBtn">先不要</button>`);
     $('#retryBtn').onclick = submit; $('#okBtn').onclick = () => overlay('');
@@ -630,7 +643,7 @@ async function doQuery(){
   catch(e){ overlay(''); alertBox('網路不太順，請再試一次'); }
 }
 
-function startReport(id, phone, total){ S.report = { id, phone, total, method:'轉帳', last5:'', date:'', amount:String(total), proof:null }; S.screen = 'report'; render(); }
+function startReport(id, phone, total, act){ S.report = { id, phone, total, act:act||S.settings, method:'轉帳', last5:'', date:'', amount:Number(total)>0?String(total):'', proof:null }; S.screen = 'report'; render(); }
 
 async function sendReport(){
   const r = S.report;
@@ -640,7 +653,7 @@ async function sendReport(){
     const res = await API.call('report', { id:r.id, phone:r.phone, method:r.method, last5:r.last5, date:r.date, amount:r.amount, proof:r.proof });
     if (!res.ok) { overlay(''); return alertBox(res.msg); }
     overlay(`<div class="ok-circle" style="width:70px;height:70px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
-      <p style="margin:0 0 6px">${r.method==='現金'?'好的，請到大安寺繳費':'已收到您的回報'}</p><p class="hint" style="margin:0 0 18px">${r.method==='現金'?'現場師兄姐會幫您核對。':'師兄姐核對後，查詢時會顯示「已核對」。'}</p>
+      <p style="margin:0 0 6px">${r.method==='現金'?'好的，請'+esc((r.act||S.settings).cashText||'到現場繳費'):'已收到您的回報'}</p><p class="hint" style="margin:0 0 18px">${r.method==='現金'?'現場師兄姐會幫您核對。':'師兄姐核對後，查詢時會顯示「已核對」。'}</p>
       <button class="btn btn-main" id="okBtn">回首頁</button>`);
     $('#okBtn').onclick = () => { overlay(''); S.screen = 'home'; S.qres = null; render(); };
   }catch(e){ overlay(''); alertBox('網路不太順，請再試一次'); }
