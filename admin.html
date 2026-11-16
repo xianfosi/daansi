@@ -12,7 +12,9 @@
 <link rel="alternate icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%234a0f4a'/%3E%3Ctext x='50' y='68' font-size='54' text-anchor='middle' fill='%23f3e3bd'%3E管%3C/text%3E%3C/svg%3E">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="config.js"></script>
+<script src="lamp/config.js"></script>
 <script src="api.js"></script>
+<script src="hub.js"></script>
 <style>
 :root{
   --bg:#f3ede2; --paper:#fffdf8; --ink:#2b2017; --muted:#6f604d; --line:#e0d3bb; --head:#4a0f4a; --head-ink:#f6ead2;
@@ -166,25 +168,26 @@ function toast(msg, err){
 
 /* ========== 登入 ========== */
 function viewLogin(){
+  Hub.unmountBar();
   $('#root').innerHTML = `
   <div class="login wrap"><div class="card">
     <img src="logo.png" alt="" width="84" height="84" style="display:block;margin:0 auto 10px">
-    <div class="serif" style="font-size:1.4rem;font-weight:900;color:var(--red)">大安寺報名後台</div>
-    <div class="muted">易經大學 學員報名管理</div>
+    <div class="serif" style="font-size:1.4rem;font-weight:900;color:var(--red)">大安寺後台</div>
+    <div class="muted">初級班報名・植福點燈・仙佛寺供養燈<br>一個密碼全部登入</div>
     <form id="lf"><input type="password" id="pw" placeholder="請輸入後台密碼" autocomplete="current-password" autofocus>
     <button class="btn main" type="submit">登入</button></form>
     <div id="lmsg" style="color:var(--err);margin-top:10px;font-weight:700"></div>
   </div></div>`;
   $('#lf').onsubmit = async e => {
     e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true; b.textContent = '登入中…';
-    const r = await API.call('login', { password: $('#pw').value }).catch(err => ({ok:false,msg:err.message}));
-    if (r.ok) { A.token = r.token; SS.set('daansi_admin_token', r.token); load(); }
+    const res = await Hub.loginAll($('#pw').value), r = res.cls;
+    if (r.ok) { A.token = r.token; const n = Hub.note(res, 'cls'); await load(); if (n) toast(n); }
     else { $('#lmsg').textContent = r.msg || '登入失敗'; b.disabled = false; b.textContent = '登入'; }
   };
 }
 async function logout(silent){
-  if (!silent) await API.call('logout', { token:A.token }).catch(()=>{});
-  A.token = null; A.data = null; SS.del('daansi_admin_token'); viewLogin();
+  if (!silent) Hub.logoutAll(); else SS.del('daansi_admin_token');
+  A.token = null; A.data = null; viewLogin();
 }
 
 /* ========== 主框架 ========== */
@@ -204,13 +207,13 @@ function frame(){
   const tabs = [['regs','📋 報名名單'],['classes','🏫 班別管理'],['qr','🔳 報名 QR Code'],['settings','⚙️ 設定']];
   $('#root').innerHTML = `
   <header><div class="wrap"><img src="logo.png" alt="" width="40" height="40" >
-    <h1 class="serif">${esc(A.data.settings.orgName||'大安寺')}<small>報名後台</small></h1>
+    <h1 class="serif">易經大學 初級班報名<small>${esc(A.data.settings.orgName||'大安寺')}</small></h1>
     <a class="btn sm" href="./" target="_blank" style="background:var(--paper);color:var(--red);border-color:var(--red)">看報名頁 ↗</a>
-    <button class="btn sm" id="outBtn" style="background:var(--paper);color:var(--red);border-color:var(--red)">登出</button></div></header>
+    </div></header>
   <nav><div class="wrap">${tabs.map(t=>`<button data-tab="${t[0]}" class="${A.tab===t[0]?'on':''}">${t[1]}</button>`).join('')}</div></nav>
   <main><div class="wrap" id="tabBody"></div></main>`;
   $$('[data-tab]').forEach(b => b.onclick = () => { A.tab = b.dataset.tab; SS.set('daansi_admin_tab', A.tab); frame(); });
-  $('#outBtn').onclick = () => logout();
+  Hub.mountBar('cls', () => { A.token = null; A.data = null; viewLogin(); });
   ({ regs:tabRegs, classes:tabClasses, qr:tabQR, settings:tabSettings })[A.tab]();
 }
 
