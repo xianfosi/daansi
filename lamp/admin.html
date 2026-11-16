@@ -11,9 +11,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="../config.js"></script>
 <script src="config.js"></script>
 <script src="core.js"></script>
 <script src="api.js"></script>
+<script src="../hub.js"></script>
 <style>
 :root{
   --bg:#f5f1ea; --paper:#fffcf7; --ink:#2b2017; --muted:#6f604d; --line:#e0d3bb; --head:#4a0f4a;
@@ -134,7 +136,7 @@ const money = n => '$' + Number(n||0).toLocaleString();
 const PAYS = ['待繳費','已回報','現場繳現金','已核對'];
 if (API.isDemo) $('#demoBanner').hidden = false;
 
-const A = { token: SS.get('daansi_lamp_token'), tab: SS.get('daansi_lamp_tab') || 'orders', act: SS.get('daansi_lamp_act') || 'main', year: '', data: null, q:'', pay:'', lamp:'', listLamp:'' };
+const A = { token: SS.get('daansi_lamp_token'), tab: SS.get('daansi_lamp_tab') || 'orders', act: new URLSearchParams(location.search).get('act') || SS.get('daansi_lamp_act') || 'main', year: '', data: null, q:'', pay:'', lamp:'', listLamp:'' };
 
 async function api(action, payload){
   try{
@@ -147,18 +149,20 @@ function toast(m, err){ $('#toastSlot').innerHTML = `<div class="toast ${err?'er
 
 /* ===== 登入 ===== */
 function viewLogin(){
+  Hub.unmountBar();
   $('#root').innerHTML = `<div class="login wrap"><div class="card">
     <img src="../logo.png" alt="" width="84" height="84" style="display:block;margin:0 auto 10px">
-    <div class="serif" style="font-size:1.4rem;font-weight:900;color:var(--red)">植福點燈後台</div>
+    <div class="serif" style="font-size:1.4rem;font-weight:900;color:var(--red)">大安寺後台</div>
+    <div class="muted">初級班報名・植福點燈・仙佛寺供養燈<br>一個密碼全部登入</div>
     <form id="lf"><input type="password" id="pw" placeholder="請輸入後台密碼" autocomplete="current-password" autofocus><button class="btn main" type="submit">登入</button></form>
     <div id="lmsg" style="color:var(--err);margin-top:10px;font-weight:700"></div></div></div>`;
   $('#lf').onsubmit = async e => {
     e.preventDefault();
-    const r = await API.call('login', { password:$('#pw').value }).catch(err => ({ok:false,msg:err.message}));
-    if (r.ok) { A.token = r.token; SS.set('daansi_lamp_token', r.token); load(); } else $('#lmsg').textContent = r.msg;
+    const res = await Hub.loginAll($('#pw').value), r = res.lamp;
+    if (r.ok) { A.token = r.token; const n = Hub.note(res, 'lamp'); await load(); if (n) toast(n); } else $('#lmsg').textContent = r.msg || '密碼不正確';
   };
 }
-async function logout(silent){ if (!silent) await API.call('logout',{token:A.token}).catch(()=>{}); A.token = null; SS.del('daansi_lamp_token'); viewLogin(); }
+async function logout(silent){ if (!silent) Hub.logoutAll(); else SS.del('daansi_lamp_token'); A.token = null; viewLogin(); }
 
 async function load(){
   if (!A.token) return viewLogin();
@@ -181,12 +185,13 @@ function frame(){
   <header><div class="wrap"><img src="../logo.png" alt=""><h1 class="serif">${esc(S().title)}<small>點燈後台</small></h1>
     <label class="muted">活動 <select id="actSel" style="width:auto;max-width:220px;font-weight:700">${A.data.activities.map(x=>`<option value="${esc(x.code)}" ${x.code===A.act?'selected':''}>${esc(x.title)}</option>`).join('')}</select></label>
     <label class="muted">年度 <select id="yearSel" style="width:auto">${A.data.years.map(y=>`<option ${y===A.year?'selected':''}>${y}</option>`).join('')}</select></label>
-    <a class="btn sm" href="${esc(actUrl())}" target="_blank">看登記頁 ↗</a><button class="btn sm" id="outBtn">登出</button></div></header>
+    <a class="btn sm" href="${esc(actUrl())}" target="_blank">看登記頁 ↗</a></div></header>
   <nav><div class="wrap">${tabs.map(t=>`<button data-tab="${t[0]}" class="${A.tab===t[0]?'on':''}">${t[1]}</button>`).join('')}</div></nav>
   <main><div class="wrap">${isCur?'':`<div class="card" style="background:var(--gold-soft)">目前看的是 <b>${esc(A.year)} 年</b>的歷史資料（今年是 ${esc(S().year)} 年）。</div>`}<div id="tabBody"></div></div></main>`;
   $('#yearSel').onchange = e => { A.year = e.target.value; load(); };
   $('#actSel').onchange = e => { A.act = e.target.value; SS.set('daansi_lamp_act', A.act); A.year = ''; A.lamp = ''; A.listLamp = ''; load(); };
-  $('#outBtn').onclick = () => logout();
+  Hub.mountBar(A.act, () => { A.token = null; A.data = null; viewLogin(); });
+  try { history.replaceState(null, '', location.pathname + '?act=' + encodeURIComponent(A.act)); } catch (e) {}
   $$('[data-tab]').forEach(b => b.onclick = () => { A.tab = b.dataset.tab; SS.set('daansi_lamp_tab', A.tab); frame(); });
   ({ orders:tabOrders, pay:tabPay, list:tabList, qr:tabQR, io:tabIO, settings:tabSettings })[A.tab]();
 }
